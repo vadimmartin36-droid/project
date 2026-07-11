@@ -8,6 +8,69 @@ interface Message {
   timestamp: Date;
 }
 
+// Direct client-side Gemini REST API fetch helper
+async function callGeminiDirectly(key: string, history: { role: string; content: string }[]) {
+  const systemInstructionText = `Ты — дружелюбный и профессиональный AI-консультант на русском языке на сайте honeygain.store. 
+
+Твоя задача — помогать посетителям разобраться в сервисе Honeygain, отвечать на вопросы о том, как начать зарабатывать, как работает приложение, и помогать решать типичные проблемы.
+
+ПРАВИЛА ДЛЯ АССИСТЕНТА:
+1. Всегда начинай диалог с дружелюбного приветствия и предложения помощи.
+2. Отвечай кратко, ясно и по делу на русском языке. Избегай слишком длинных текстов, разбивай информацию на небольшие абзацы или списки для легкости чтения.
+3. Если вопрос сложный, специфический, требует доступа к личному кабинету пользователя или касается технических сбоев выплат, вежливо предложи пользователю обратиться в официальную службу поддержки Honeygain на их официальном сайте или написать нашему администратору Вадиму Мартину в Telegram (ссылка есть в подвале нашего сайта).
+4. Общайся исключительно в вежливом, позитивном и теплом тоне.
+
+КЛЮЧЕВЫЕ ЗНАНИЯ О HONEYGAIN И САЙТЕ HONEYGAIN.STORE:
+- Наш сайт honeygain.store — это независимый информационный и партнерский (реферальный) ресурс.
+- Мы помогаем пользователям начать зарабатывать на Honeygain и даем дополнительный бонус за регистрацию по нашей ссылке.
+- Приветственный бонус: при регистрации по нашей реферальной ссылке (кнопки на сайте) каждый новый пользователь мгновенно получает гарантированный бонус $3 на свой баланс бесплатно!
+- Как начать зарабатывать:
+  1. Зарегистрироваться по ссылке на нашем сайте (получить $3 сразу).
+  2. Скачать и установить приложение Honeygain (поддерживаются Windows, macOS, Linux, Android, iOS).
+  3. Запустить приложение и оставить его работать в фоновом режиме, пока устройство подключено к Интернету.
+- Выплаты: Можно выводить средства через PayPal или в криптовалюте JumpTask (JMPT) в любое время при достижении порога.
+- Реферальная система: 25% пожизненный бонус от ежедневного заработка приглашенных друзей.
+- Ежемесячный Мега-Конкурс: Проводится на нашем сайте. Призовой фонд $100 каждый месяц ($50 за 1-е место, $30 за 2-е, $20 за 3-е). Розыгрыш проходит 1-го числа каждого месяца в 20:00 UTC, результаты публикуются в нашем официальном Telegram-канале @vadimmartin. Для участия достаточно зарегистрироваться по нашей ссылке, установить приложение и быть активным (приглашение 3 друзей удваивает шансы!).
+- Совместимость: работает на ПК (Windows, Mac, Linux), Android-смартфонах и iOS-устройствах (iPhone/iPad). Максимум 1 активное устройство на один IP-адрес. Можно подключить больше устройств, если у них разные IP-адреса.`;
+
+  const contents = history.map(h => ({
+    role: h.role === "assistant" ? "model" : "user",
+    parts: [{ text: h.content }]
+  }));
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: contents,
+        systemInstruction: {
+          parts: [{ text: systemInstructionText }]
+        },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`REST Error: ${response.status} - ${errText}`);
+  }
+
+  const data = await response.json();
+  const result = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!result) {
+    throw new Error("No text content returned");
+  }
+  return result;
+}
+
 interface AIConsultantProps {
   lang: "ru" | "en";
 }
@@ -19,6 +82,8 @@ export function AIConsultant({ lang }: AIConsultantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showBadge, setShowBadge] = useState(true);
   const [showTooltip, setShowTooltip] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem("honeygain_gemini_api_key") || "");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -114,20 +179,85 @@ export function AIConsultant({ lang }: AIConsultantProps) {
         content: m.content
       }));
 
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: historyPayload })
-      });
+      let apiResponseText = "";
+      let parsedSuccessfully = false;
 
-      if (!res.ok) throw new Error("API error");
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: historyPayload })
+        });
 
-      const data = await res.json();
-      
+        // If response is OK and has JSON content type (avoiding Netlify 200 HTML redirects on non-existent endpoints)
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data && data.text) {
+            apiResponseText = data.text;
+            parsedSuccessfully = true;
+          }
+        }
+      } catch (apiError) {
+        console.warn("API request failed or timed out, falling back to smart local AI assistant logic:", apiError);
+      }
+
+      // Smart Local Client-Side AI Response Fallback if API failed, timed out, or returned non-JSON
+      if (!parsedSuccessfully) {
+        const clientApiKey = localStorage.getItem("honeygain_gemini_api_key") || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+        if (clientApiKey) {
+          try {
+            apiResponseText = await callGeminiDirectly(clientApiKey, historyPayload);
+            parsedSuccessfully = true;
+          } catch (geminiError) {
+            console.error("Direct client-side Gemini call failed:", geminiError);
+          }
+        }
+      }
+
+      // 3. Static templates fallback if no client-side API key or if the call failed
+      if (!parsedSuccessfully) {
+        const query = textToSend.toLowerCase().trim();
+        if (lang === "ru") {
+          if (query.includes("начать") || query.includes("как заработать") || query.includes("как начать") || query.includes("старт") || query.includes("регистрац") || query.includes("запустить") || query.includes("установ")) {
+            apiResponseText = "Привет! 😊 Чтобы начать зарабатывать в Honeygain, выполните три простых шага:\n\n1. **Зарегистрируйтесь** по реферальной ссылке на нашем сайте (вы сразу получите приветственный бонус **$3** на ваш баланс!).\n2. **Скачайте и установите** официальное приложение Honeygain на любое ваше устройство (поддерживаются Windows, macOS, Linux, Android и iOS).\n3. **Запустите приложение** и войдите в свой аккаунт. Оно будет безопасно работать в фоновом режиме, делясь неиспользуемым интернетом и принося вам полностью пассивный доход!\n\nЕсли у вас возникнут сложности, я всегда готов подсказать!";
+          } else if (query.includes("безопасн") || query.includes("вирус") || query.includes("данн") || query.includes("слеж") || query.includes("вред") || query.includes("честн")) {
+            apiResponseText = "Привет! 😊 Да, приложение Honeygain абсолютно безопасно!\n\n• Оно использует только неиспользуемую часть вашего интернет-трафика для задач контентной доставки и маркетинговых исследований проверенных компаний.\n• У приложения **нет доступа** к вашим личным файлам, контактам, фотографиям, банковским картам или персональным данным.\n• Все соединения шифруются, приложение не замедляет работу устройства и не содержит вирусов.\n\nВы можете использовать его с полной уверенностью в безопасности вашей конфиденциальности!";
+          } else if (query.includes("сколько") || query.includes("доход") || query.includes("заработок") || query.includes("прибыль") || query.includes("деньг") || query.includes("платят") || query.includes("курс")) {
+            apiResponseText = "Привет! 😊 Ваш заработок зависит от нескольких важных факторов:\n\n• **Объема трафика**, которым вы делитесь (зависит от скорости интернета).\n• **Количества устройств** (можно подключить по 1 устройству на каждый уникальный IP-адрес).\n• **Вашего региона** (в некоторых странах спрос на трафик выше).\n\nВ среднем пользователи зарабатывают от **$10 до $30 в месяц** полностью пассивно. Чтобы увеличить доход, вы можете участвовать в нашем ежемесячном конкурсе на **$100** и приглашать друзей — вы будете пожизненно получать **25%** от их ежедневного заработка!";
+          } else if (query.includes("вывести") || query.includes("вывод") || query.includes("выплат") || query.includes("paypal") || query.includes("крипт") || query.includes("jmpt") || query.includes("кошел")) {
+            apiResponseText = "Привет! 😊 Вывести заработанные средства можно очень просто и удобно при достижении минимального порога выплат:\n\n1. **PayPal** — классический вывод фиатных денег прямо на ваш кошелек.\n2. **JumpTask (JMPT)** — вывод в криптовалюте без минимального порога и практически без комиссий в любое время!\n\nСервис выплачивает средства стабильно и честно. Если у вас возникнут вопросы по конкретной выплате, наша поддержка всегда поможет разобраться.";
+          } else if (query.includes("привет") || query.includes("здравствуй") || query.includes("здравствуйте") || query.includes("добрый день") || query.includes("добрый вечер") || query.includes("ку")) {
+            apiResponseText = "Привет! 😊 Рад приветствовать вас на Honeygain.store! Я ваш личный AI-помощник.\n\nЯ с удовольствием помогу вам разобраться в сервисе, расскажу, как установить приложение, начать получать полностью пассивный доход и как принять участие в нашем ежемесячном конкурсе на $100! О чем рассказать подробнее?";
+          } else if (query.includes("конкурс") || query.includes("розыгрыш") || query.includes("100") || query.includes("выиграть") || query.includes("приз")) {
+            apiResponseText = "Привет! 😊 Наш ежемесячный Мега-Конкурс с призовым фондом **$100** проводится 1-го числа каждого месяца в 20:00 UTC!\n\n• **1-е место**: $50 на ваш баланс.\n• **2-е место**: $30.\n• **3-е место**: $20.\n\n**Правила участия простые**:\n1. Зарегистрируйтесь по нашей ссылке (получите гарантированный бонус $3 сразу).\n2. Установите приложение Honeygain и держите его активным.\n3. Пригласите 3 друзей (это удваивает ваши шансы в конкурсе!).\nРезультаты конкурса публикуются в нашем официальном Telegram-канале Vadim Martin!";
+          } else {
+            apiResponseText = "Привет! 😊 Я ваш дружелюбный AI-консультант. Моя задача — помогать посетителям разобраться в сервисе, отвечать на вопросы о том, как начать зарабатывать, как работает приложение, и помогать решать типичные проблемы.\n\nВы можете спросить меня:\n• *Как начать зарабатывать на Honeygain?*\n• *Безопасно ли использовать приложение?*\n• *Сколько можно заработать?*\n• *Как вывести деньги?*\n• *Как принять участие в конкурсе на $100?*\n\n⚠️ **Для владельца сайта**: так как сайт запущен на статическом хостинге, для ответов на любые свободные вопросы без шаблонов, пожалуйста, укажите ваш бесплатный API-ключ Gemini во встроенных настройках чата (значок шестерёнки ⚙️ в верхнем правом углу).";
+          }
+        } else {
+          // English Fallbacks
+          if (query.includes("start") || query.includes("earn") || query.includes("how to start") || query.includes("regist") || query.includes("install") || query.includes("setup")) {
+            apiResponseText = "Hello! 😊 To start earning with Honeygain, follow these three simple steps:\n\n1. **Register** using the referral link on our website to immediately get a **$3 welcome bonus**!\n2. **Download and install** the official Honeygain app on your devices (Windows, macOS, Linux, Android, iOS supported).\n3. **Run the app** and log in. It will safely work in the background, sharing unused internet and earning you passive income!\n\nIf you have any questions, I'm here to help!";
+          } else if (query.includes("safe") || query.includes("virus") || query.includes("data") || query.includes("secur") || query.includes("privac")) {
+            apiResponseText = "Hello! 😊 Yes, Honeygain is completely safe!\n\n• It only uses your unused internet bandwidth for content delivery and web intelligence tasks by verified companies.\n• The app **never** accesses your personal files, photos, contacts, cards, or private data.\n• All connections are fully encrypted and secure.\n\nYou can use it with absolute peace of mind!";
+          } else if (query.includes("how much") || query.includes("income") || query.includes("money") || query.includes("profit") || query.includes("revenue") || query.includes("rate")) {
+            apiResponseText = "Hello! 😊 Your earnings depend on a few factors:\n\n• **Shared traffic volume** (depends on your internet speed).\n• **Number of devices** (you can connect 1 device per unique IP address).\n• **Your location** (higher demand in some countries).\n\nOn average, users earn **$10 to $30 per month** completely passively. To earn more, join our monthly **$100 contest** and invite friends to get **25%** of their daily earnings!";
+          } else if (query.includes("withdraw") || query.includes("payout") || query.includes("paypal") || query.includes("crypto") || query.includes("jmpt") || query.includes("wallet")) {
+            apiResponseText = "Hello! 😊 Withdrawing your earnings is very easy once you reach the payout threshold:\n\n1. **PayPal** — standard fiat payout directly to your wallet.\n2. **JumpTask (JMPT)** — crypto payout with no minimum threshold and almost zero transaction fees at any time!\n\nHoneygain payouts are stable and reliable. Feel free to ask if you need details!";
+          } else if (query.includes("hello") || query.includes("hi") || query.includes("hey") || query.includes("greetings")) {
+            apiResponseText = "Hello! 😊 Welcome to Honeygain.store! I'm your personal AI assistant.\n\nI'll gladly help you learn about the platform, explain how to set up the app, start earning 100% passive income, and how to participate in our monthly $100 giveaway! What would you like to know more about?";
+          } else if (query.includes("contest") || query.includes("giveaway") || query.includes("win") || query.includes("prize") || query.includes("100")) {
+            apiResponseText = "Hello! 😊 Our monthly $100 Giveaway is held on the 1st of every month at 20:00 UTC!\n\n• **1st Place**: $50.\n• **2nd Place**: $30.\n• **3rd Place**: $20.\n\n**Simple Rules**:\n1. Register via our link (get $3 welcome bonus immediately).\n2. Install Honeygain and keep it active.\n3. Invite 3 friends to double your winning chances!\nResults are published in our Telegram channel!";
+          } else {
+            apiResponseText = "Hello! 😊 I'm your friendly AI assistant. My job is to help visitors understand Honeygain, answer how to start earning, how the app works, and solve common issues.\n\nAsk me:\n• *How to start earning on Honeygain?*\n• *Is the application safe to use?*\n• *How much can I earn?*\n• *How to withdraw money?*\n• *How to join the $100 contest?*\n\n⚠️ **For Site Owner**: To allow answering any custom questions, configure your Gemini API Key in the settings (gear icon ⚙️ in top right).";
+          }
+        }
+      }
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.text || "Извините, не удалось получить ответ.",
+        content: apiResponseText,
         timestamp: new Date()
       };
 
@@ -216,6 +346,16 @@ export function AIConsultant({ lang }: AIConsultantProps) {
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {/* Settings gear for API Key */}
+                  <button
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    title={lang === "ru" ? "Настройки ИИ" : "AI Settings"}
+                    className={`w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer ${
+                      isSettingsOpen ? "text-amber-500 bg-white/5" : "text-amber-500/70 hover:text-amber-500"
+                    }`}
+                  >
+                    <i className="fa-solid fa-gear text-base"></i>
+                  </button>
                   {/* Trash can for clearing chat */}
                   {messages.length > 1 && (
                     <button
@@ -236,6 +376,71 @@ export function AIConsultant({ lang }: AIConsultantProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Settings Panel */}
+              <AnimatePresence>
+                {isSettingsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="px-5 py-4 border-b text-xs text-left overflow-hidden bg-slate-900/90 backdrop-blur-md"
+                    style={{ borderColor: "var(--card-border)" }}
+                  >
+                    <div className="font-bold text-amber-500 mb-1.5 flex items-center justify-between">
+                      <span>⚙️ {lang === "ru" ? "Настройки API Ключа Gemini" : "Gemini API Key Settings"}</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsSettingsOpen(false)}
+                        className="text-amber-500 hover:text-amber-400 font-extrabold cursor-pointer"
+                      >
+                        <i className="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                    <p className="opacity-80 mb-3 leading-normal" style={{ color: "var(--text-muted)" }}>
+                      {lang === "ru"
+                        ? "Если ваш сайт работает на статическом хостинге (Netlify/Vercel/GitHub Pages), у вас нет бэкенд-сервера. Чтобы ИИ мог полноценно отвечать на любые свободные вопросы без шаблонов, укажите ваш бесплатный API-ключ Gemini (он сохранится в памяти вашего браузера):"
+                        : "If your site is hosted on a static provider (Netlify/Vercel/GitHub Pages), you don't have a backend server. To let the AI answer any custom questions without templates, enter your free Gemini API key (stored safely in your browser):"}
+                    </p>
+                    <div className="flex space-x-2">
+                      <input
+                        type="password"
+                        value={userApiKey}
+                        onChange={(e) => setUserApiKey(e.target.value)}
+                        placeholder="AIzaSy..."
+                        className="flex-1 px-3 py-2 rounded-xl bg-black/40 border text-white outline-none focus:border-amber-500/80 text-xs font-mono"
+                        style={{ borderColor: "var(--card-border)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (userApiKey.trim()) {
+                            localStorage.setItem("honeygain_gemini_api_key", userApiKey.trim());
+                          } else {
+                            localStorage.removeItem("honeygain_gemini_api_key");
+                          }
+                          setIsSettingsOpen(false);
+                        }}
+                        className="px-3 py-2 rounded-xl honey-gradient text-slate-950 font-bold hover:scale-105 active:scale-95 transition-all text-xs cursor-pointer"
+                      >
+                        {lang === "ru" ? "Сохранить" : "Save"}
+                      </button>
+                    </div>
+                    <div className="mt-2.5 opacity-65 flex items-center justify-between" style={{ color: "var(--text-muted)" }}>
+                      <span>{lang === "ru" ? "Ключ можно получить бесплатно на:" : "Get a free key at:"}</span>
+                      <a
+                        href="https://aistudio.google.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-500 underline font-semibold hover:text-amber-400"
+                      >
+                        Google AI Studio ↗
+                      </a>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Messages Body */}
               <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin">
