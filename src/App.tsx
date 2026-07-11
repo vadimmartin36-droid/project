@@ -4,6 +4,7 @@ import { getStandaloneHtml } from './standalone';
 import { motion, AnimatePresence } from 'motion/react';
 import { NotificationToast } from './components/NotificationToast';
 import { AIConsultant } from './components/AIConsultant';
+import { LuckyWheel } from './components/LuckyWheel';
 
 export default function App() {
   // Инициализация темы и языка из localStorage или значений по умолчанию
@@ -204,6 +205,7 @@ export default function App() {
           {/* Навигационные ссылки */}
           <div className="hidden md:flex items-center space-x-8 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
             <a href="#how" className="hover:text-[var(--text-main)] transition-colors" style={{ fontFamily: 'Georgia' }}>{t.btnHow}</a>
+            <a href="#wheel" className="hover:text-[var(--text-main)] transition-colors text-honey font-bold" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Рулетка 🎡' : 'Roulette 🎡'}</a>
             <a href="#advantages" className="hover:text-[var(--text-main)] transition-colors" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Преимущества' : 'Benefits'}</a>
             <a href="#cta" className="hover:text-[var(--text-main)] transition-colors text-honey font-bold" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Бонус $3' : 'Bonus $3'}</a>
           </div>
@@ -465,6 +467,9 @@ export default function App() {
 
         </div>
       </section>
+
+      {/* РУЛЕТКА / КОЛЕСО УДАЧИ (LUCKY WHEEL SECTION) */}
+      <LuckyWheel lang={lang} theme={theme} referralLink={referralLink} t={t} />
 
       {/* ВИДЕО-БЛОК (VIDEO SECTION) */}
       <section className="pb-24 sm:pb-32 px-4">

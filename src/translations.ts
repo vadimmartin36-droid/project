@@ -102,6 +102,16 @@ export interface TranslationSet {
     cookieConsentText: string;
     cookieConsentAccept: string;
     cookieConsentLearnMore: string;
+    wheelTitle: string;
+    wheelSubtitle: string;
+    wheelBadge: string;
+    wheelBtnSpin: string;
+    wheelBtnSpinning: string;
+    wheelResultTitle: string;
+    wheelResultDesc: string;
+    wheelCooldownText: string;
+    wheelTryAgain: string;
+    wheelClaimBtn: string;
     reviews: Review[];
 }
 
@@ -201,6 +211,16 @@ export const translations: Record<'ru' | 'en', TranslationSet> = {
     cookieConsentText: "Мы используем файлы cookie для персонализации интерфейса (сохранения языка и темы). Оставаясь на сайте, вы соглашаетесь с нашей Политикой конфиденциальности.",
     cookieConsentAccept: "Согласиться",
     cookieConsentLearnMore: "Подробнее",
+    wheelTitle: "Колесо Удачи Honeygain",
+    wheelSubtitle: "Крутите бесшовное интерактивное Колесо Фортуны раз в 24 часа! Выиграйте дополнительные стартовые бонусы, реферальные бусты и билеты на наш Мега-Конкурс!",
+    wheelBadge: "🎡 Бонусная рулетка",
+    wheelBtnSpin: "Испытать удачу!",
+    wheelBtnSpinning: "Колесо вращается...",
+    wheelResultTitle: "Поздравляем! 🎉",
+    wheelResultDesc: "Ваш выигрыш:",
+    wheelCooldownText: "Следующее бесплатное вращение будет доступно через:",
+    wheelTryAgain: "Вращать снова (демо-режим)",
+    wheelClaimBtn: "Активировать выигрыш!",
     reviews: [
       {
         name: "Алексей К.",
@@ -363,6 +383,16 @@ export const translations: Record<'ru' | 'en', TranslationSet> = {
     cookieConsentText: "We use cookies to personalize your experience (language and theme preferences). By continuing to browse, you agree to our Privacy Policy.",
     cookieConsentAccept: "Accept",
     cookieConsentLearnMore: "Learn More",
+    wheelTitle: "Honeygain Lucky Wheel",
+    wheelSubtitle: "Spin our seamless interactive Wheel of Fortune once every 24 hours! Win additional starting cash bonuses, referral boosters, and free entries for our Monthly Contest!",
+    wheelBadge: "🎡 Bonus Roulette",
+    wheelBtnSpin: "Spin the Wheel!",
+    wheelBtnSpinning: "Spinning...",
+    wheelResultTitle: "Congratulations! 🎉",
+    wheelResultDesc: "You won:",
+    wheelCooldownText: "Next free spin available in:",
+    wheelTryAgain: "Spin Again (Demo Mode)",
+    wheelClaimBtn: "Claim Prize Now!",
     reviews: [
       {
         name: "Alex K.",
