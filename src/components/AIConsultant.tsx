@@ -302,253 +302,91 @@ export function AIConsultant({ lang }: AIConsultantProps) {
       {/* Centered Chat Window Overlay */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             {/* Click outside to close */}
             <div className="absolute inset-0 cursor-pointer" onClick={() => setIsOpen(false)} />
             
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="w-full max-w-[440px] h-[620px] max-h-[85vh] rounded-3xl shadow-2xl border flex flex-col overflow-hidden relative z-10 glass-card"
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="w-full max-w-[420px] rounded-3xl p-6 sm:p-8 shadow-2xl border flex flex-col items-center text-center relative z-10 glass-card overflow-hidden"
               style={{ 
                 backgroundColor: "var(--card-bg)", 
                 borderColor: "var(--card-border)",
-                boxShadow: "0 25px 50px -12px rgba(246, 176, 38, 0.25)"
+                boxShadow: "0 25px 50px -12px rgba(246, 176, 38, 0.2)"
               }}
             >
-              {/* Header */}
-              <div className="px-5 py-4 flex items-center justify-between border-b relative" style={{ borderColor: "var(--card-border)" }}>
-                {/* Glowing decorative indicator */}
-                <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f6b026]/40 to-transparent" />
-                
-                <div className="flex items-center space-x-3.5">
-                  <div className="relative">
-                    <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                      <i className="fa-solid fa-robot text-xl animate-pulse"></i>
-                    </div>
-                    {/* Status Indicator */}
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
-                    </span>
-                  </div>
-                  
-                  <div className="text-left">
-                    <h4 className="text-base font-extrabold tracking-tight text-amber-500" style={{ fontFamily: "Georgia" }}>
-                      {t.headerTitle}
-                    </h4>
-                    <p className="text-[11px] opacity-75" style={{ color: "var(--text-muted)" }}>
-                      {t.headerSubtitle}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  {/* Settings gear for API Key */}
-                  <button
-                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                    title={lang === "ru" ? "Настройки ИИ" : "AI Settings"}
-                    className={`w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer ${
-                      isSettingsOpen ? "text-amber-500 bg-white/5" : "text-amber-500/70 hover:text-amber-500"
-                    }`}
-                  >
-                    <i className="fa-solid fa-gear text-base"></i>
-                  </button>
-                  {/* Trash can for clearing chat */}
-                  {messages.length > 1 && (
-                    <button
-                      onClick={handleClear}
-                      title={t.clearChat}
-                      className="w-9 h-9 rounded-xl hover:bg-white/5 text-amber-500/70 hover:text-amber-500 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <i className="fa-solid fa-trash-can text-base"></i>
-                    </button>
-                  )}
-                  {/* Close Button */}
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    <i className="fa-solid fa-xmark text-xl"></i>
-                  </button>
-                </div>
-              </div>
-
-              {/* Settings Panel */}
-              <AnimatePresence>
-                {isSettingsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="px-5 py-4 border-b text-xs text-left overflow-hidden bg-slate-900/90 backdrop-blur-md"
-                    style={{ borderColor: "var(--card-border)" }}
-                  >
-                    <div className="font-bold text-amber-500 mb-1.5 flex items-center justify-between">
-                      <span>⚙️ {lang === "ru" ? "Настройки API Ключа Gemini" : "Gemini API Key Settings"}</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsSettingsOpen(false)}
-                        className="text-amber-500 hover:text-amber-400 font-extrabold cursor-pointer"
-                      >
-                        <i className="fa-solid fa-xmark"></i>
-                      </button>
-                    </div>
-                    <p className="opacity-80 mb-3 leading-normal" style={{ color: "var(--text-muted)" }}>
-                      {lang === "ru"
-                        ? "Если ваш сайт работает на статическом хостинге (Netlify/Vercel/GitHub Pages), у вас нет бэкенд-сервера. Чтобы ИИ мог полноценно отвечать на любые свободные вопросы без шаблонов, укажите ваш бесплатный API-ключ Gemini (он сохранится в памяти вашего браузера):"
-                        : "If your site is hosted on a static provider (Netlify/Vercel/GitHub Pages), you don't have a backend server. To let the AI answer any custom questions without templates, enter your free Gemini API key (stored safely in your browser):"}
-                    </p>
-                    <div className="flex space-x-2">
-                      <input
-                        type="password"
-                        value={userApiKey}
-                        onChange={(e) => setUserApiKey(e.target.value)}
-                        placeholder="AIzaSy..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-black/40 border text-white outline-none focus:border-amber-500/80 text-xs font-mono"
-                        style={{ borderColor: "var(--card-border)" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (userApiKey.trim()) {
-                            localStorage.setItem("honeygain_gemini_api_key", userApiKey.trim());
-                          } else {
-                            localStorage.removeItem("honeygain_gemini_api_key");
-                          }
-                          setIsSettingsOpen(false);
-                        }}
-                        className="px-3 py-2 rounded-xl honey-gradient text-slate-950 font-bold hover:scale-105 active:scale-95 transition-all text-xs cursor-pointer"
-                      >
-                        {lang === "ru" ? "Сохранить" : "Save"}
-                      </button>
-                    </div>
-                    <div className="mt-2.5 opacity-65 flex items-center justify-between" style={{ color: "var(--text-muted)" }}>
-                      <span>{lang === "ru" ? "Ключ можно получить бесплатно на:" : "Get a free key at:"}</span>
-                      <a
-                        href="https://aistudio.google.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amber-500 underline font-semibold hover:text-amber-400"
-                      >
-                        Google AI Studio ↗
-                      </a>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin">
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end space-x-2`}
-                  >
-                    {m.role === "assistant" && (
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex-shrink-0 flex items-center justify-center text-amber-500 text-xs">
-                        <i className="fa-solid fa-robot"></i>
-                      </div>
-                    )}
-                    
-                    <div
-                      className={`max-w-[82%] rounded-2xl px-4 py-3 text-xs sm:text-[13px] leading-relaxed text-left ${
-                        m.role === "user"
-                          ? "honey-gradient text-slate-950 font-medium rounded-br-sm shadow-md"
-                          : "glass-card border rounded-bl-sm"
-                      }`}
-                      style={
-                        m.role === "assistant"
-                          ? { 
-                              backgroundColor: "rgba(255, 255, 255, 0.02)", 
-                              borderColor: "var(--card-border)",
-                              color: "var(--text-main)"
-                            }
-                          : undefined
-                      }
-                    >
-                      <div className="whitespace-pre-line">{m.content}</div>
-                      <span 
-                        className={`block text-[9px] mt-1 text-right opacity-50 ${
-                          m.role === "user" ? "text-slate-950/70" : ""
-                        }`}
-                      >
-                        {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Typing indicator */}
-                {isLoading && (
-                  <div className="flex justify-start items-end space-x-2">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex-shrink-0 flex items-center justify-center text-amber-500 text-xs">
-                      <i className="fa-solid fa-robot"></i>
-                    </div>
-                    <div 
-                      className="rounded-2xl px-4 py-3 border glass-card flex items-center space-x-1"
-                      style={{ backgroundColor: "rgba(255, 255, 255, 0.02)", borderColor: "var(--card-border)" }}
-                    >
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Suggestion Chips */}
-              {!isLoading && (
-                <div className="px-5 py-3 border-t flex flex-wrap gap-1.5 bg-black/10" style={{ borderColor: "var(--card-border)" }}>
-                  {suggestions[lang].map((s, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSend(s)}
-                      className="text-[11px] font-semibold px-3 py-1.5 rounded-full border border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/50 text-amber-500 transition-all cursor-pointer"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Input Footer */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSend(input);
-                }}
-                className="p-4 border-t flex items-center space-x-2.5 bg-black/20"
-                style={{ borderColor: "var(--card-border)" }}
+              {/* Glowing decorative indicator */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500 to-transparent animate-pulse" />
+              
+              {/* Close Button on top right */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer text-amber-500/70 hover:text-amber-500"
               >
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={t.placeholder}
-                  className="flex-1 bg-transparent border-0 outline-none focus:ring-0 text-xs sm:text-sm px-2 py-1.5"
-                  style={{ color: "var(--text-main)" }}
-                  disabled={isLoading}
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isLoading}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                    input.trim() && !isLoading
-                      ? "honey-gradient text-slate-950 shadow-md shadow-amber-500/10 scale-100 hover:scale-105 active:scale-95"
-                      : "opacity-40"
-                  }`}
-                  style={!(input.trim() && !isLoading) ? { backgroundColor: "var(--card-border)", color: "var(--text-muted)" } : undefined}
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+
+              {/* Icon / Illustration */}
+              <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-6 relative mt-2">
+                <div className="absolute inset-0 rounded-2xl bg-amber-500/5 animate-ping opacity-50" />
+                <i className="fa-solid fa-screwdriver-wrench text-3xl animate-bounce" style={{ animationDuration: '3s' }}></i>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-slate-950 border border-amber-500/20 flex items-center justify-center">
+                  <i className="fa-solid fa-gear text-[10px] animate-spin"></i>
+                </div>
+              </div>
+
+              {/* Title & Status */}
+              <h3 
+                className="text-2xl font-extrabold tracking-tight text-amber-500 mb-2"
+                style={{ fontFamily: "Georgia, serif" }}
+              >
+                {lang === "ru" ? "Технические работы" : "Technical Maintenance"}
+              </h3>
+              
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-bold text-amber-500 mb-5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>{lang === "ru" ? "Скоро всё заработает!" : "Everything will work soon!"}</span>
+              </div>
+
+              {/* Description */}
+              <p 
+                className="text-xs sm:text-sm leading-relaxed mb-6" 
+                style={{ color: "var(--text-muted)" }}
+              >
+                {lang === "ru" 
+                  ? "Мы обновляем искусственный интеллект нашего онлайн-консультанта и проводим плановое техническое обслуживание. Чат временно недоступен, но совсем скоро вернется к работе с новыми возможностями!"
+                  : "We are currently updating our AI assistant and performing scheduled maintenance. The chat is temporarily unavailable, but will be back online very soon with brand new features!"}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="w-full space-y-3">
+                <a
+                  href="https://t.me/vadimmartin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-4 rounded-xl honey-gradient text-slate-950 font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm shadow-lg shadow-amber-500/10 cursor-pointer"
                 >
-                  <i className="fa-solid fa-paper-plane text-xs"></i>
+                  <i className="fa-brands fa-telegram text-base sm:text-lg"></i>
+                  <span>{lang === "ru" ? "Написать администратору" : "Contact Administrator"}</span>
+                </a>
+
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl border font-semibold text-xs sm:text-sm hover:bg-white/5 transition-all cursor-pointer"
+                  style={{ borderColor: "var(--card-border)", color: "var(--text-main)" }}
+                >
+                  {lang === "ru" ? "Закрыть" : "Close"}
                 </button>
-              </form>
+              </div>
+
+              {/* Footer hint */}
+              <div className="mt-5 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                <span>{lang === "ru" ? "Администрация Telegram:" : "Telegram Administration:"}</span>{" "}
+                <span className="text-amber-500 font-semibold">@vadimmartin</span>
+              </div>
             </motion.div>
           </div>
         )}
