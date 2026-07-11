@@ -1,0 +1,6 @@
+{
+  "name": "Honeygain Referral Landing Page",
+  "description": "A premium, fully interactive landing page for the Honeygain referral program with multi-language and light/dark theme support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

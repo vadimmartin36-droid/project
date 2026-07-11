@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <script id="fetch-patch">
+    (function() {
+      try {
+        var originalFetch = window.fetch;
+        var currentFetch = originalFetch;
+        Object.defineProperty(window, 'fetch', {
+          get: function() { return currentFetch; },
+          set: function(val) { currentFetch = val; },
+          configurable: true,
+          enumerable: true
+        });
+      } catch (e) {
+        console.warn('Failed to patch fetch setter:', e);
+      }
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Honeygain.store — Пассивный доход / Passive Income 24/7</title>
+  
+  <!-- Встроенная иконка Favicon (Кастомный технологичный SVG) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='hg' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23f6b026'/><stop offset='100%' stop-color='%23f28c28'/></linearGradient></defs><path d='M256,40 C160,180 120,240 120,310 C120,385 181,446 256,446 C331,446 392,385 392,310 C392,240 352,180 256,40 Z' fill='url(%23hg)'/><path d='M256,75 C195,190 170,240 170,300 C170,360 209,410 256,410' fill='none' stroke='%23ffffff' stroke-width='16' stroke-linecap='round' opacity='0.25'/><circle cx='256' cy='210' r='18' fill='%23111111'/><circle cx='200' cy='290' r='16' fill='%23111111'/><circle cx='312' cy='290' r='16' fill='%23111111'/><circle cx='256' cy='360' r='18' fill='%23111111'/><line x1='256' y1='210' x2='200' y2='290' stroke='%23111111' stroke-width='8' stroke-linecap='round'/><line x1='256' y1='210' x2='312' y2='290' stroke='%23111111' stroke-width='8' stroke-linecap='round'/><line x1='200' y1='290' x2='256' y2='360' stroke='%23111111' stroke-width='8' stroke-linecap='round'/><line x1='312' y1='290' x2='256' y2='360' stroke='%23111111' stroke-width='8' stroke-linecap='round'/><line x1='200' y1='290' x2='312' y2='290' stroke='%23111111' stroke-width='8' stroke-linecap='round'/><circle cx='256' cy='210' r='8' fill='%23f6b026'/><circle cx='200' cy='290' r='7' fill='%23f6b026'/><circle cx='312' cy='290' r='7' fill='%23f6b026'/><circle cx='256' cy='360' r='8' fill='%23f6b026'/></svg>">
+  
+  <!-- Подключение шрифтов Google Fonts: Inter и Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  
+  <!-- Подключение Font Awesome для современных иконок -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- Подключение Tailwind CSS (v4) через официальный CDN-скрипт -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Настройка шрифтов в соответствии с требованиями */
+    body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+    
+    .serif-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+
+    /* Настройка CSS-переменных для мгновенного переключения темы */
+    :root {
+      --background: #f8fafc;
+      --bg-gradient: radial-gradient(circle at top right, #ffffff, #f1f5f9);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --card-bg: rgba(255, 255, 255, 0.7);
+      --card-border: rgba(15, 23, 42, 0.05);
+      --accent-start: #f6b026;
+      --accent-end: #f28c28;
+      --glow: rgba(246, 176, 38, 0.15);
+      --input-bg: rgba(15, 23, 42, 0.02);
+      --slider-track: #e2e8f0;
+      --header-bg: rgba(248, 250, 252, 0.75);
+      --dot-color: rgba(246, 176, 38, 0.04);
+    }
+
+    [data-theme="dark"] {
+      --background: #070708;
+      --bg-gradient: radial-gradient(circle at top right, #0d0d10, #050507);
+      --text-main: #f8fafc;
+      --text-muted: rgba(255, 255, 255, 0.55);
+      --card-bg: rgba(15, 15, 18, 0.65);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --accent-start: #f6b026;
+      --accent-end: #f28c28;
+      --glow: rgba(246, 176, 38, 0.22);
+      --input-bg: rgba(255, 255, 255, 0.03);
+      --slider-track: rgba(255, 255, 255, 0.06);
+      --header-bg: rgba(7, 7, 8, 0.75);
+      --dot-color: rgba(246, 176, 38, 0.07);
+    }
+
+    /* Применение переменных */
+    body {
+      background-color: var(--background);
+      background-image: var(--bg-gradient);
+      color: var(--text-main);
+    }
+
+    /* Dot grid pattern */
+    .bg-dot-grid {
+      background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Beautiful custom honeycomb SVG pattern */
+    .bg-honeycomb-overlay {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66zm0-3L3 48L3 18L28 3L53 18L53 48L28 63zm0 34L0 81L0 78L28 94L56 78L56 81L28 97zM28 30L0 14L0 11L28 27L56 11L56 14L28 30z' fill='%23f6b026' fill-opacity='0.015' fill-rule='evenodd'/%3E%3C/svg%3E");
+      mask-image: radial-gradient(circle at center, black, transparent 80%);
+      -webkit-mask-image: radial-gradient(circle at center, black, transparent 80%);
+    }
+
+    /* Стеклянные карточки (Glassmorphism) */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.02);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    [data-theme="dark"] .glass-card {
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .glass-card:hover {
+      border-color: var(--accent-start);
+      box-shadow: 0 12px 40px 0 var(--glow);
+    }
+
+    /* Custom gradients & utility classes matching the Clean Minimalism theme */
+    .honey-gradient {
+      background: linear-gradient(135deg, #f6b026 0%, #f28c28 100%);
+    }
+
+    .text-honey {
+      background: linear-gradient(135deg, #f6b026 0%, #f28c28 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Анимации парения и пульсации */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px var(--glow); }
+      50% { box-shadow: 0 0 25px var(--glow); }
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes toast-progress {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+    .animate-toast-progress {
+      animation: toast-progress 5.5s linear forwards;
+    }
+
+    /* Beautiful animated glowing border for video embed */
+    .video-glow-frame {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid rgba(246, 176, 38, 0.3);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+      animation: border-pulse-glow 4s ease-in-out infinite;
+    }
+
+    @keyframes border-pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(246, 176, 38, 0.25), 0 10px 40px rgba(0, 0, 0, 0.3);
+        border-color: rgba(246, 176, 38, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 35px rgba(246, 176, 38, 0.65), 0 10px 45px rgba(242, 140, 40, 0.4);
+        border-color: rgba(246, 176, 38, 0.95);
+      }
+    }
+
+    /* Плавные кастомные скроллбары */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--background);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+      border-radius: 4px;
+    }
+
+    /* Premium animated glowing badge */
+    .premium-glowing-badge {
+      position: relative;
+      background: rgba(15, 23, 42, 0.85); /* High-contrast dark glass background so white text is always visible */
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(246, 176, 38, 0.35);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 12px rgba(246, 176, 38, 0.1), inset 0 0 12px rgba(246, 176, 38, 0.05);
+    }
+
+    .premium-glowing-badge > *:not(.badge-glow-aura) {
+      position: relative;
+      z-index: 2;
+    }
+
+    .premium-glowing-badge::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(246, 176, 38, 0.25) 50%,
+        transparent 100%
+      );
+      transform: skewX(-25deg);
+      pointer-events: none;
+      animation: shine-sweep 6s infinite ease-in-out;
+      z-index: 1;
+    }
+
+    .premium-glowing-badge::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(
+        135deg,
+        rgba(246, 176, 38, 0.5),
+        rgba(242, 140, 40, 0.1) 40%,
+        rgba(246, 176, 38, 0.1) 60%,
+        rgba(242, 140, 40, 0.6)
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      animation: rotate-gradient-border 8s linear infinite;
+      z-index: 1;
+    }
+
+    /* Ambient breathing pulse behind badge */
+    .badge-glow-aura {
+      position: absolute;
+      inset: -4px;
+      background: radial-gradient(circle, rgba(246, 176, 38, 0.4) 0%, transparent 70%);
+      filter: blur(8px);
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0.7;
+      pointer-events: none;
+      animation: aura-breathe 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes shine-sweep {
+      0% {
+        left: -100%;
+      }
+      15%, 100% {
+        left: 200%;
+      }
+    }
+
+    @keyframes rotate-gradient-border {
+      0% {
+        filter: hue-rotate(0deg);
+      }
+      100% {
+        filter: hue-rotate(360deg);
+      }
+    }
+
+    @keyframes aura-breathe {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(1.08);
+        opacity: 0.85;
+      }
+    }
+
+    /* Слайдеры в калькуляторе */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: var(--slider-track);
+      outline: none;
+      transition: background 0.3s;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--glow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px var(--accent-start);
+    }
+
+    /* Кнопки с градиентом и плавным наведением */
+    .btn-gradient {
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+      color: #0f172a !important;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .btn-gradient::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, var(--accent-end), var(--accent-start));
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    
+    .btn-gradient:hover::before {
+      opacity: 1;
+    }
+
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px var(--glow);
+    }
+
+    .btn-gradient:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary-outline {
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-main);
+      transition: border-color 0.3s, background-color 0.3s, transform 0.3s;
+    }
+
+    .btn-secondary-outline:hover {
+      border-color: var(--accent-start);
+      background: rgba(246, 176, 38, 0.05);
+      transform: translateY(-2px);
+    }
+
+    /* Стили для Карусели отзывов */
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+    }
+    .carousel-slide {
+      flex: 0 0 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="transition-colors duration-300 relative min-h-screen z-0">
+
+  <!-- BACKGROUND DECORATIVE LAYERS (BEAUTIFUL & ADAPTIVE) -->
+  <div class="fixed inset-0 z-[-10] pointer-events-none overflow-hidden select-none">
+    <!-- Base background color -->
+    <div class="absolute inset-0" style="background-color: var(--background);"></div>
+    
+    <!-- Dot Grid Layer -->
+    <div class="absolute inset-0 bg-dot-grid opacity-[0.85]"></div>
+    
+    <!-- Honeycomb Vignette Overlay -->
+    <div class="absolute inset-0 bg-honeycomb-overlay"></div>
+    
+    <!-- Dynamic Glowing Blobs -->
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-[120px]" style="animation: float 12s ease-in-out infinite;"></div>
+    <div class="absolute bottom-[10%] right-[-10%] w-[65%] h-[65%] rounded-full bg-orange-500/10 dark:bg-orange-500/4 blur-[140px]" style="animation: float 15s ease-in-out infinite; animation-delay: 2.5s;"></div>
+    <div class="absolute top-[35%] left-[25%] w-[45%] h-[45%] rounded-full bg-yellow-500/5 dark:bg-yellow-500/2 blur-[100px]" style="animation: float 18s ease-in-out infinite; animation-delay: 5s;"></div>
+  </div>
+
+  <!-- ШАПКА САЙТА (STICKY HEADER) -->
+  <header class="sticky top-0 z-50 backdrop-blur-md border-b" style="background-color: var(--header-bg); border-color: var(--card-border);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+      
+      <!-- Логотип -->
+      <a href="#" class="flex items-center space-x-2.5 group">
+        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#f6b026] to-[#f28c28] flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+          <span class="text-xl sm:text-2xl">🍯</span>
+        </div>
+        <span class="text-xl sm:text-2xl tracking-tight" style="color: var(--text-main)">
+          <span class="font-serif italic font-bold">HoneyGain</span><span class="text-[#f6b026] font-medium font-sans">.store</span>
+        </span>
+      </a>
+
+      <!-- Панель управления (Тема, Язык, Кнопка) -->
+      <div class="flex items-center space-x-3 sm:space-x-6">
+        
+        <!-- Переключатель Темы -->
+        <button id="themeToggle" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center cursor-pointer text-lg hover:scale-110 active:scale-95 transition-all" title="Сменить тему">
+          <i class="fa-solid fa-moon text-[#f6b026]" id="themeIcon"></i>
+        </button>
+
+        <!-- Переключатель Языка -->
+        <div class="relative inline-block text-left">
+          <button id="langToggle" class="h-10 px-3.5 rounded-xl glass-card flex items-center space-x-2 text-sm font-semibold cursor-pointer hover:scale-105 transition-all">
+            <i class="fa-solid fa-globe text-[#f6b026]"></i>
+            <span id="currentLang">RU</span>
+          </button>
+        </div>
+
+        <!-- Кнопка «Присоединиться» -->
+        <a href="#cta" class="hidden sm:inline-flex px-5 py-2.5 rounded-xl btn-gradient text-sm shadow-md cursor-pointer text-center">
+          <span data-i18n="joinBtn">Присоединиться</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ГЕРОЙ-БЛОК (HERO SECTION) -->
+  <section class="relative pt-12 pb-20 sm:pt-20 sm:pb-32 overflow-hidden">
+    <!-- Фоновые размытые градиенты для премиального стиля -->
+    <div class="absolute top-1/4 left-1/10 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-amber-500/10 blur-3xl -z-10 animate-float"></div>
+    <div class="absolute bottom-1/4 right-1/10 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-orange-500/10 blur-3xl -z-10 animate-float" style="animation-delay: 2s"></div>
+
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      
+      <!-- Парящий Бейдж -->
+      <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#f6b026]/10 text-[#f6b026] text-xs font-semibold tracking-wider uppercase mb-8 border border-[#f6b026]/20 animate-float">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#f6b026] animate-pulse"></span>
+        <span data-i18n="badge">🍯 Пассивный доход 24/7</span>
+      </div>
+
+      <!-- Главный заголовок -->
+      <h1 class="text-center w-full block font-bold tracking-tight serif-title italic text-balance border-solid border-0" style="color: var(--text-main); font-size: 36px; line-height: 36px; height: 40px; margin-top: 0px; margin-bottom: 10px; margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; padding-bottom: 0px">
+        <span data-i18n="heroTitle">Зарабатывай, даже</span>
+        <span class="text-honey font-bold" data-i18n="heroTitleHighlight">когда ты спишь</span><span data-i18n="heroTitleEnd">!</span>
+      </h1>
+
+      <!-- Подзаголовок -->
+      <div class="text-center text-base sm:text-xl max-w-6xl mx-auto mb-10 leading-relaxed font-light space-y-1" style="color: var(--text-muted); padding-top: 55px;">
+        <p data-i18n="heroSubtitle" style="font-size: 18px; line-height: 28px">Делись своим неиспользуемым интернетом и получай за это реальные деньги.</p>
+        <p class="whitespace-normal" data-i18n="heroSubtitleSec" style="font-size: 18px; line-height: 28px">Honeygain — это полностью безопасная платформа для создания пассивного дохода без каких-либо вложений.</p>
+      </div>
+
+      <!-- Две Кнопки -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto" style="width: 1200px; max-width: 100%">
+        <a href="https://join.honeygain.com/VADIM82855" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto max-w-xs sm:max-w-none mx-auto px-6 py-3 sm:px-8 sm:py-4 rounded-2xl btn-gradient text-sm sm:text-lg flex items-center justify-center space-x-3 shadow-lg shadow-amber-500/20 group">
+          <span data-i18n="btnStart">Начать зарабатывать</span>
+          <i class="fa-solid fa-arrow-right group-hover:translate-x-1.5 transition-transform"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- РАЗДЕЛ КОНКУРС (CONTEST SECTION) -->
+  <section id="contest" class="py-24 sm:py-32 relative overflow-hidden border-t" style="border-color: var(--card-border)">
+    <div class="absolute top-1/3 right-10 w-72 h-72 rounded-full bg-[#f6b026]/5 blur-[80px] -z-10 animate-pulse-glow"></div>
+    <div class="absolute bottom-1/4 left-10 w-72 h-72 rounded-full bg-[#f28c28]/5 blur-[80px] -z-10 animate-pulse-glow"></div>
+    
+    <div class="max-w-7xl mx-auto px-4">
+      <!-- Заголовок -->
+      <div class="text-center mb-16 sm:mb-24">
+        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#f6b026]/10 text-[#f6b026] text-xs font-semibold tracking-wider uppercase mb-4 border border-[#f6b026]/20">
+          <i class="fa-solid fa-trophy"></i>
+          <span data-i18n="contestBadge">🎉 Розыгрыш призов</span>
+        </span>
+        <h2 class="font-bold tracking-tight mb-4 serif-title italic border-solid border-0" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="contestTitle">
+          Ежемесячный Мега-Конкурс
+        </h2>
+        <p class="text-base sm:text-lg font-light max-w-[800px] mx-auto" style="color: var(--text-muted); font-size: 18px; line-height: 28px; padding-top: 25px;" data-i18n="contestSubtitle">
+          Участвуй в нашем розыгрыше призов для новых активных пользователей Honeygain!
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch mb-16">
+        <!-- Карточка 1: Инфо о призовом фонде и Таймер -->
+        <div class="lg:col-span-5 glass-card p-8 rounded-3xl border border-amber-500/10 flex flex-col justify-between relative overflow-hidden group">
+          <div class="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-amber-500/5 blur-2xl group-hover:bg-amber-500/10 transition-colors"></div>
+          
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-500 mb-2 block" data-i18n="contestPrizePool">Призовой фонд</span>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#f6b026] serif-title italic mb-6" data-i18n="contestPrizePoolVal">
+              $100 каждый месяц
+            </div>
+            
+            <div class="space-y-4 mb-8">
+              <div class="flex items-center space-x-3 text-sm">
+                <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                  <i class="fa-solid fa-calendar-day"></i>
+                </div>
+                <div>
+                  <div class="text-xs opacity-70" style="color: var(--text-muted)" data-i18n="contestDate">Следующий розыгрыш</div>
+                  <div class="font-semibold text-sm" style="color: var(--text-main)" data-i18n="contestDateVal">1-е число каждого месяца в 20:00 UTC</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Обратный отсчет -->
+          <div class="border-t border-amber-500/10 pt-6">
+            <div class="text-xs font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted)" id="timeLeftLabel">
+              До розыгрыша осталось:
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-amber-500/5 border border-amber-500/10 rounded-xl p-2 sm:p-3">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#f6b026]" id="timerDays">00</div>
+                <div class="text-[10px] uppercase opacity-75 font-light" style="color: var(--text-muted)" id="daysLabel">дн</div>
+              </div>
+              <div class="bg-amber-500/5 border border-amber-500/10 rounded-xl p-2 sm:p-3">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#f6b026]" id="timerHours">00</div>
+                <div class="text-[10px] uppercase opacity-75 font-light" style="color: var(--text-muted)" id="hoursLabel">ч</div>
+              </div>
+              <div class="bg-amber-500/5 border border-amber-500/10 rounded-xl p-2 sm:p-3">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#f6b026]" id="timerMinutes">00</div>
+                <div class="text-[10px] uppercase opacity-75 font-light" style="color: var(--text-muted)" id="minsLabel">мин</div>
+              </div>
+              <div class="bg-amber-500/5 border border-amber-500/10 rounded-xl p-2 sm:p-3">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#f6b026]" id="timerSeconds">00</div>
+                <div class="text-[10px] uppercase opacity-75 font-light" style="color: var(--text-muted)" id="secsLabel">сек</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Карточка 2: Призовые места -->
+        <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+          
+          <!-- 1 Место -->
+          <div class="glass-card p-6 rounded-2xl border border-amber-500/20 flex items-center space-x-5 relative overflow-hidden group hover:border-amber-500/40 transition-colors">
+            <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-[#f6b026]/5 blur-xl group-hover:bg-[#f6b026]/10 transition-colors"></div>
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center text-slate-950 text-2xl font-bold shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform flex-shrink-0">
+              👑
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-[#f6b026] serif-title italic mb-1" data-i18n="contestT1Title">1-е место ($50)</h4>
+              <p class="text-xs sm:text-sm font-light leading-relaxed" style="color: var(--text-muted)" data-i18n="contestT1Desc">Главный приз наличными на баланс или крипто-кошелек.</p>
+            </div>
+          </div>
+
+          <!-- 2 Место -->
+          <div class="glass-card p-6 rounded-2xl border border-[var(--card-border)] flex items-center space-x-5 relative overflow-hidden group hover:border-slate-500/40 transition-colors">
+            <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-slate-400/5 blur-xl group-hover:bg-slate-400/10 transition-colors"></div>
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 flex items-center justify-center text-slate-950 text-2xl font-bold shadow-lg shadow-slate-400/10 group-hover:scale-110 transition-transform flex-shrink-0">
+              🥈
+            </div>
+            <div>
+              <h4 class="text-lg font-bold serif-title italic mb-1" style="color: var(--text-main)" data-i18n="contestT2Title">2-е место ($30)</h4>
+              <p class="text-xs sm:text-sm font-light leading-relaxed" style="color: var(--text-muted)" data-i18n="contestT2Desc">Второй приз за отличную активность и приглашение друзей.</p>
+            </div>
+          </div>
+
+          <!-- 3 Место -->
+          <div class="glass-card p-6 rounded-2xl border border-[var(--card-border)] flex items-center space-x-5 relative overflow-hidden group hover:border-amber-700/40 transition-colors">
+            <div class="absolute right-0 top-0 w-32 h-32 rounded-full bg-amber-700/5 blur-xl group-hover:bg-amber-700/10 transition-colors"></div>
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-amber-800/10 group-hover:scale-110 transition-transform flex-shrink-0">
+              🥉
+            </div>
+            <div>
+              <h4 class="text-lg font-bold serif-title italic mb-1" style="color: var(--text-main)" data-i18n="contestT3Title">3-е место ($20)</h4>
+              <p class="text-xs sm:text-sm font-light leading-relaxed" style="color: var(--text-muted)" data-i18n="contestT3Desc">Поощрительный приз за установку на несколько устройств.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Правила участия -->
+      <div class="max-w-3xl mx-auto glass-card p-8 sm:p-10 rounded-[32px] border border-amber-500/10 text-center relative">
+        <h3 class="text-2xl font-bold mb-6 text-[#f6b026] serif-title italic" data-i18n="contestRulesTitle">Простые правила участия:</h3>
+        
+        <ul class="text-left space-y-4 mb-8">
+          <li class="flex items-start space-x-3 text-sm sm:text-base font-light">
+            <div class="mt-1 w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[#f6b026] flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+            <span style="color: var(--text-muted)" data-i18n="contestRule1">Зарегистрируйся по нашей ссылке (получи гарантированные $3 сразу)</span>
+          </li>
+          <li class="flex items-start space-x-3 text-sm sm:text-base font-light">
+            <div class="mt-1 w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[#f6b026] flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+            <span style="color: var(--text-muted)" data-i18n="contestRule2">Установи приложение Honeygain (телефон, компьютер) и держи его активным постоянно!</span>
+          </li>
+          <li class="flex items-start space-x-3 text-sm sm:text-base font-light">
+            <div class="mt-1 w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[#f6b026] flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+            <span style="color: var(--text-muted)" data-i18n="contestRule3">Пригласи 3 друзей (это удваивает твои шансы!)</span>
+          </li>
+        </ul>
+
+        <p class="text-xs sm:text-sm text-left font-light mb-4 italic" style="color: var(--text-muted)" data-i18n="contestNote">Примечание: * Участие бесплатное. Один аккаунт = одна заявка в неделю. Победитель объявляется каждое 1-е число месяца в 20:00, в нашем телеграмм канале.</p>
+
+        <button onclick="showTermsModal(event)" class="text-amber-500 hover:text-amber-400 font-medium text-sm transition-colors flex items-center justify-center space-x-1.5 mx-auto mb-8 hover:underline cursor-pointer">
+          <i class="fa-solid fa-circle-info text-xs"></i>
+          <span data-i18n="contestTermsLink">Обязательно прочитайте условия конкурса!</span>
+        </button>
+
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+          <a href="https://join.honeygain.com/VADIM82855" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-2xl btn-gradient text-slate-950 font-semibold shadow-lg shadow-amber-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 text-center cursor-pointer">
+            <i class="fa-solid fa-gift mr-2"></i>
+            <span data-i18n="contestJoinBtn">Принять участие в конкурсе</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ВИДЕО-БЛОК (VIDEO SECTION) -->
+  <section class="pb-24 sm:pb-32 px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="font-bold mb-3 mx-auto max-w-full lg:w-[768px] text-center" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="videoTitle">Узнай больше о Honeygain</h2>
+        <p class="text-sm sm:text-base max-w-3xl mx-auto" style="color: var(--text-muted); font-size: 18px; line-height: 27px; padding-top: 25px;" data-i18n="videoSubtitle">Посмотри короткое видео о том, как работает система на практике</p>
+      </div>
+      
+      <!-- Обертка для видео с эффектом свечения и тенью -->
+      <div class="video-glow-frame p-2 sm:p-3 rounded-3xl max-w-3xl mx-auto overflow-hidden" style="border-radius: 24px">
+        <div class="relative pb-[56.25%] h-0 rounded-2xl overflow-hidden shadow-2xl">
+          <iframe class="absolute top-0 left-0 w-full h-full border-0" 
+            src="https://www.youtube.com/embed/_acLhr4XLU4" 
+            title="Honeygain Explainer Video" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- СЕКЦИЯ «КАК ЭТО РАБОТАЕТ» (HOW IT WORKS SECTION) -->
+  <section id="how" class="py-24 sm:py-32 border-t border-b scroll-mt-20" style="border-color: var(--card-border);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
+        <h2 class="font-bold mb-4 italic" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="howTitle">Как это работает?</h2>
+        <p class="text-base sm:text-lg" style="color: var(--text-muted)" data-i18n="howSubtitle">Всего 3 простых шага отделяют тебя от стабильного пассивного дохода</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+        
+        <!-- Шаг 1 -->
+        <div class="glass-card p-8 sm:p-10 rounded-3xl relative group">
+          <span class="absolute -top-10 left-6 text-7xl sm:text-8xl font-black font-serif italic text-transparent bg-clip-text bg-gradient-to-b from-[#f6b026]/15 to-transparent select-none" data-i18n="step1Num">01</span>
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl text-[#f6b026] mb-8 group-hover:rotate-12 transition-transform">
+            <i class="fa-solid fa-download"></i>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold mb-4" style="color: var(--text-main)" data-i18n="step1Title">Установи приложение</h3>
+          <p class="text-sm sm:text-base leading-relaxed" style="color: var(--text-muted)" data-i18n="step1Desc">
+            Зарегистрируйся по нашей партнерской ссылке, скачай и установи приложение Honeygain на свои устройства (ПК, смартфон или планшет).
+          </p>
+        </div>
+
+        <!-- Шаг 2 -->
+        <div class="glass-card p-8 sm:p-10 rounded-3xl relative group">
+          <span class="absolute -top-10 left-6 text-7xl sm:text-8xl font-black font-serif italic text-transparent bg-clip-text bg-gradient-to-b from-[#f6b026]/15 to-transparent select-none" data-i18n="step2Num">02</span>
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl text-[#f6b026] mb-8 group-hover:rotate-12 transition-transform">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold mb-4" style="color: var(--text-main)" data-i18n="step2Title">Запусти в фоне</h3>
+          <p class="text-sm sm:text-base leading-relaxed" style="color: var(--text-muted)" data-i18n="step2Desc">
+            Приложение безопасно использует часть твоего неиспользуемого интернет-трафика в фоновом режиме, не замедляя твою работу.
+          </p>
+        </div>
+
+        <!-- Шаг 3 -->
+        <div class="glass-card p-8 sm:p-10 rounded-3xl relative group">
+          <span class="absolute -top-10 left-6 text-7xl sm:text-8xl font-black font-serif italic text-transparent bg-clip-text bg-gradient-to-b from-[#f6b026]/15 to-transparent select-none" data-i18n="step3Num">03</span>
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl text-[#f6b026] mb-8 group-hover:rotate-12 transition-transform">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold mb-4" style="color: var(--text-main)" data-i18n="step3Title">Получай выплаты</h3>
+          <p class="text-sm sm:text-base leading-relaxed" style="color: var(--text-muted)" data-i18n="step3Desc">
+            Накапливай баллы и выводи реальные деньги на свой счет через PayPal или криптовалюту (JMPT) в любое время.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- СЕКЦИЯ ПРЕИМУЩЕСТВ (BENEFITS SECTION) -->
+  <section id="advantages" class="py-24 sm:py-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
+        <h2 class="font-bold mb-4 text-center no-underline" style="color: var(--text-main); text-decoration-line: none; text-align: center; font-family: 'Playfair Display'; font-size: 36px; height: 40px; line-height: 36px" data-i18n="benefitsTitle">Наши Преимущества</h2>
+        <p class="text-base sm:text-lg" style="color: var(--text-muted); padding-top: 25px;" data-i18n="benefitsSubtitle">Почему миллионы пользователей по всему миру выбирают Honeygain для заработка</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        
+        <!-- Преимущество 1 -->
+        <div class="glass-card p-8 rounded-3xl text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 mx-auto flex items-center justify-center text-3xl text-[#f6b026] mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-mug-hot"></i>
+          </div>
+          <h3 class="text-lg sm:text-xl font-bold mb-3" style="color: var(--text-main)" data-i18n="b1Title">Полностью пассивный доход</h3>
+          <p class="text-xs sm:text-sm" style="color: var(--text-muted)" data-i18n="b1Desc">Настрой один раз и забудь. Приложение работает автономно в фоновом режиме, принося доход круглые сутки.</p>
+        </div>
+
+        <!-- Преимущество 2 -->
+        <div class="glass-card p-8 rounded-3xl text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 mx-auto flex items-center justify-center text-3xl text-[#f6b026] mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h3 class="text-lg sm:text-xl font-bold mb-3" style="color: var(--text-main)" data-i18n="b2Title">Абсолютная безопасность</h3>
+          <p class="text-xs sm:text-sm" style="color: var(--text-muted)" data-i18n="b2Desc">Трафик используется только проверенными компаниями для аналитики и исследований рынка. Никакого доступа к личным данным.</p>
+        </div>
+
+        <!-- Преимущество 3 -->
+        <div class="glass-card p-8 rounded-3xl text-center group border-amber-500/30">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f6b026] to-[#f28c28] mx-auto flex items-center justify-center text-3xl text-slate-900 mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          <h3 class="text-lg sm:text-xl font-bold mb-3 text-[#f6b026]" data-i18n="b3Title">Бонус $3 при регистрации</h3>
+          <p class="text-xs sm:text-sm font-medium" style="color: var(--text-muted)" data-i18n="b3Desc">Зарегистрируйся по нашей партнерской ссылке и мгновенно получи стартовый бонус $3 на свой баланс бесплатно!</p>
+        </div>
+
+        <!-- Преимущество 4 -->
+        <div class="glass-card p-8 rounded-3xl text-center group">
+          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 mx-auto flex items-center justify-center text-3xl text-[#f6b026] mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <h3 class="text-lg sm:text-xl font-bold mb-3" style="color: var(--text-main)" data-i18n="b4Title">Партнерская программа 25%</h3>
+          <p class="text-xs sm:text-sm" style="color: var(--text-muted)" data-i18n="b4Desc">Регистрируйся сейчас и приглашай друзей, получая пожизненно 25% от их ежедневного заработка в качестве бонуса!</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- КАЛЬКУЛЯТОР ДОХОДА (INCOME CALCULATOR) -->
+  <section class="py-24 sm:py-32 border-t border-b" style="border-color: var(--card-border); background-color: rgba(246, 176, 38, 0.02)">
+    <div class="max-w-4xl mx-auto px-4">
+      
+      <div class="text-center mb-16">
+        <h2 class="font-bold mb-4" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="calcTitle">Калькулятор Дохода</h2>
+        <p class="text-base sm:text-lg" style="color: var(--text-muted); padding-top: 25px;" data-i18n="calcSubtitle">Рассчитай свой примерный ежемесячный заработок прямо сейчас</p>
+      </div>
+
+      <div class="glass-card p-6 sm:p-10 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+        
+        <!-- Ползунки управления -->
+        <div class="space-y-8">
+          
+          <!-- Ползунок Трафика -->
+          <div>
+            <div class="flex justify-between items-center mb-4 text-sm sm:text-base font-semibold">
+              <span style="color: var(--text-main)" data-i18n="trafficLabel">Средний трафик в день</span>
+              <span class="text-[#f6b026] text-lg font-mono font-bold" id="trafficVal">2500 MB</span>
+            </div>
+            <input type="range" id="trafficSlider" min="100" max="5000" step="100" value="2500">
+            <div class="flex justify-between text-xs mt-2" style="color: var(--text-muted)">
+              <span>100 MB</span>
+              <span>5 GB</span>
+            </div>
+          </div>
+
+          <!-- Ползунок Устройств -->
+          <div>
+            <div class="flex justify-between items-center mb-4 text-sm sm:text-base font-semibold">
+              <span style="color: var(--text-main)" data-i18n="devicesLabel">Количество активных устройств</span>
+              <span class="text-[#f6b026] text-lg font-mono font-bold" id="devicesVal">3</span>
+            </div>
+            <input type="range" id="devicesSlider" min="1" max="10" step="1" value="3">
+            <div class="flex justify-between text-xs mt-2" style="color: var(--text-muted)">
+              <span>1</span>
+              <span>10</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Результат вычислений -->
+        <div class="flex flex-col items-center justify-center p-8 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-[#f6b026]/20 relative overflow-hidden text-center min-h-[220px]">
+          <!-- Фоновый декоративный круг -->
+          <div class="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-amber-500/10 blur-xl"></div>
+          
+          <span class="text-xs uppercase tracking-widest font-bold mb-3" style="color: var(--text-muted)" data-i18n="estTitle">Примерный доход:</span>
+          
+          <!-- Анимированная сумма -->
+          <span class="text-5xl sm:text-6xl font-black font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#f6b026] to-[#f28c28] mb-3 select-none" id="earningsVal">
+            $6.75
+          </span>
+          
+          <span class="text-sm font-medium" style="color: var(--text-main)">
+            <span data-i18n="estPeriod">в месяц</span>
+          </span>
+
+          <p class="text-[10px] sm:text-[11px] mt-6 leading-relaxed" style="color: var(--text-muted)" data-i18n="calcDisclaimer">
+            * Расчеты основаны на стандартных тарифах Honeygain и могут меняться в зависимости от твоей геолокации, скорости сети и востребованности трафика.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- КАРУСЕЛЬ ОТЗЫВОВ (REVIEWS CAROUSEL) -->
+  <section class="py-24 sm:py-32 overflow-hidden relative">
+    <div class="max-w-5xl mx-auto px-4">
+      
+      <div class="text-center mb-16 sm:mb-24">
+        <h2 class="font-bold mb-4" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="reviewsTitle">Отзывы Пользователей</h2>
+        <p class="text-base sm:text-lg" style="color: var(--text-muted); padding-top: 25px;" data-i18n="reviewsSubtitle">Реальные отзывы людей, которые уже зарабатывают с Honeygain по всему миру</p>
+      </div>
+
+      <!-- Главная обертка карусели -->
+      <div class="relative max-w-3xl mx-auto">
+        
+        <!-- Контейнер видимого окна -->
+        <div class="overflow-hidden rounded-3xl glass-card p-8 sm:p-12 relative cursor-grab active:cursor-grabbing" id="carouselViewport">
+          <div class="carousel-inner" id="carouselInner">
+            
+            <!-- Слайд 1 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold">АК</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Алексей К.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Россия</span> &bull; <span>14.05.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Сначала сомневался, но за месяц набежало около $35 абсолютно пассивно с двух устройств. Вывел на PayPal без проблем, теперь советую всем друзьям."
+              </p>
+            </div>
+
+            <!-- Слайд 2 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">ЕВ</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Елена В.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Казахстан</span> &bull; <span>22.06.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Сначала установила только себе, теперь подключила всю семью и друзей по рефке. С их активности капает очень приятный процент в 25%. Рекомендую!"
+              </p>
+            </div>
+
+            <!-- Слайд 3 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold">ДС</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Дмитрий С.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Беларусь</span> &bull; <span>19.06.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Занимаюсь криптой, поэтому вывод в JMPT через сеть BSC для меня просто находка. Никаких комиссий и моментальное зачисление. Супер!"
+              </p>
+            </div>
+
+            <!-- Слайд 4 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">ИП</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Иван П.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Украина</span> &bull; <span>04.07.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Работает тихо в фоне на домашнем сервере и рабочем ПК. Около $40 в месяц чистыми за интернет, которым я все равно не пользуюсь на полную мощность."
+              </p>
+            </div>
+
+            <!-- Слайд 5 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center text-white font-bold">МТ</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Мария Т.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Латвия</span> &bull; <span>12.06.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Регистрационный бонус в $3 очень мотивирует начать! За две недели уже накопила на первую выплату. Безопасно, удобно и действительно работает."
+              </p>
+            </div>
+
+            <!-- Слайд 6 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold">АМ</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Александр М.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Узбекистан</span> &bull; <span>01.07.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Отличное дополнение к стипендии. Установил на телефон и ноут, за месяц накопилось $22. Выплату получил в течение суток после заказа на PayPal."
+              </p>
+            </div>
+
+            <!-- Слайд 7 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">ОК</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Ольга К.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Молдова</span> &bull; <span>28.05.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Очень простое приложение, не перегружает систему. Сначала боялась за безопасность, но проверила — данные защищены, никаких вирусов. Буду пользоваться дальше!"
+              </p>
+            </div>
+
+            <!-- Слайд 8 -->
+            <div class="carousel-slide space-y-6">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-bold">НД</div>
+                <div>
+                  <h4 class="font-bold text-lg" style="color: var(--text-main)">Николай Д.</h4>
+                  <div class="text-xs flex items-center space-x-2" style="color: var(--text-muted)">
+                    <span>Армения</span> &bull; <span>15.06.2026</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex text-[#f6b026] space-x-1">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <p class="text-base leading-relaxed italic" style="color: var(--text-muted)">
+                "Использую Honeygain уже больше полугода. Доход стабильный, на оплату интернета и мобильной связи хватает с лихвой. Отличная штука для пассивного заработка."
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Кнопки управления по сторонам (скрыты на мобильных) -->
+        <button id="prevBtn" class="hidden lg:flex absolute left-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass-card items-center justify-center text-lg text-[#f6b026] cursor-pointer hover:scale-110 transition-transform active:scale-95 z-10 prev-btn-action">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button id="nextBtn" class="hidden lg:flex absolute right-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass-card items-center justify-center text-lg text-[#f6b026] cursor-pointer hover:scale-110 transition-transform active:scale-95 z-10 next-btn-action">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <!-- Мобильные кнопки и Точки навигации -->
+        <div class="flex justify-center items-center space-x-6 mt-8">
+          <button id="prevBtnMob" class="flex lg:hidden w-10 h-10 rounded-full glass-card items-center justify-center text-[#f6b026] active:scale-90 transition-all prev-btn-action">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          
+          <div class="flex justify-center items-center space-x-3" id="carouselDots">
+            <!-- Генерируются автоматически скриптом -->
+          </div>
+
+          <button id="nextBtnMob" class="flex lg:hidden w-10 h-10 rounded-full glass-card items-center justify-center text-[#f6b026] active:scale-90 transition-all next-btn-action">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+
+  <!-- ФИНАЛЬНЫЙ ПРИЗЫВ (CTA SECTION) -->
+  <section id="cta" class="py-24 sm:py-32 relative overflow-hidden">
+    <!-- Фоновые декоративные свечения -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 sm:w-[500px] sm:h-[500px] rounded-full bg-[#f6b026]/10 blur-[100px] -z-10 animate-pulse-glow"></div>
+
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <div class="glass-card p-8 sm:p-16 rounded-[32px] border border-amber-500/20 relative">
+        
+        <!-- Корона бонуса в углу -->
+        <div class="absolute -top-5 left-1/2 -translate-x-1/2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-[#f6b026] to-[#f28c28] text-slate-900 text-[10px] sm:text-xs font-bold tracking-wider uppercase animate-float flex items-center space-x-1 shadow-lg whitespace-nowrap">
+          <i class="fa-solid fa-award"></i>
+          <span data-i18n="ctaBonusBadge">🍯 Бонус $3 активирован</span>
+        </div>
+
+        <h2 class="font-bold mb-6 text-balance" style="color: var(--text-main); font-size: 36px; height: 40px; line-height: 36px" data-i18n="ctaTitle">Готов начать зарабатывать?</h2>
+        <p class="text-base sm:text-xl max-w-xl mx-auto leading-relaxed" style="color: var(--text-muted); font-size: 18px; line-height: 28px; height: 65px; width: 800px; margin-left: 0px; margin-top: 0px; margin-bottom: 80px; padding-bottom: 0px; padding-top: 25px; border-radius: 0px; border-width: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; max-width: 100%" data-i18n="ctaSubtitle">
+          Зарегистрируйся прямо сейчас по кнопке ниже и мгновенно забери свой приветственный бонус $3!
+        </p>
+
+        <a href="https://join.honeygain.com/VADIM82855" target="_blank" rel="noopener noreferrer" class="inline-flex px-4 py-2.5 sm:px-12 sm:py-5 rounded-xl sm:rounded-2xl btn-gradient text-xs sm:text-xl font-bold space-x-3 items-center justify-center shadow-xl shadow-amber-500/20 animate-pulse-glow hover:scale-105 active:scale-95 transition-all">
+          <i class="fa-solid fa-user-plus"></i>
+          <span data-i18n="ctaBtn">Зарегистрироваться + Бонус $3</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Кнопка прокрутки наверх -->
+  <button id="scrollToTopBtn" class="fixed bottom-6 left-6 sm:bottom-8 sm:left-8 z-40 w-12 h-12 rounded-full bg-gradient-to-br from-[#f6b026] to-[#f28c28] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-110 active:scale-95 cursor-pointer group transition-all duration-300 opacity-0 pointer-events-none translate-y-4 scale-90" title="Наверх">
+    <i class="fa-solid fa-arrow-up text-lg group-hover:-translate-y-0.5 transition-transform"></i>
+  </button>
+
+  <!-- Контейнер для всплывающего уведомления активности -->
+  <div id="activityNotification" class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 pointer-events-none select-none max-w-sm w-[calc(100vw-3rem)] transition-all duration-300 opacity-0 transform translate-y-8 scale-95"></div>
+
+  <!-- ПОДВАЛ (FOOTER) -->
+  <footer class="border-t py-12 sm:py-16" style="border-color: var(--card-border); background-color: rgba(0,0,0,0.02)">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-8 mb-10">
+        
+        <!-- Логотип бренда в подвале -->
+        <a href="#" class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#f6b026] to-[#f28c28] flex items-center justify-center text-sm">
+            <span>🍯</span>
+          </div>
+          <span class="text-lg tracking-tight" style="color: var(--text-main)">
+            <span class="font-serif italic font-bold">HoneyGain</span><span class="text-[#f6b026] font-medium">.store</span>
+          </span>
+        </a>
+
+        <!-- Реферальная Ссылка в футере -->
+        <div class="text-xs sm:text-sm font-semibold tracking-wide">
+          <a href="https://join.honeygain.com/VADIM82855" target="_blank" rel="noopener noreferrer" class="text-[#f6b026] hover:underline flex items-center space-x-1.5">
+            <span data-i18n="footerLinkText">Регистрация в Honeygain</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+          </a>
+        </div>
+
+        <!-- Иконки Соцсетей -->
+        <div class="flex items-center space-x-4">
+          <a href="https://t.me/vadimmartin" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#f6b026] hover:scale-110 hover:text-white transition-all" title="Telegram">
+            <i class="fa-brands fa-telegram"></i>
+          </a>
+          <button onclick="showWipModal(event)" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#f6b026] hover:scale-110 hover:text-white transition-all cursor-pointer" title="YouTube">
+            <i class="fa-brands fa-youtube"></i>
+          </button>
+          <button onclick="showWipModal(event)" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#f6b026] hover:scale-110 hover:text-white transition-all cursor-pointer" title="Twitter">
+            <i class="fa-brands fa-twitter"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Разделитель и Дисклеймер -->
+      <div class="border-t pt-8" style="border-color: var(--card-border);">
+        <p class="text-center text-[9px] sm:text-[10px] leading-relaxed max-w-4xl mx-auto mb-6" style="color: var(--text-muted)" data-i18n="footerDisclaimer">
+          Дисклеймер: Этот сайт (honeygain.store) является реферальным/партнерским ресурсом и не является официальным представительством компании Honeygain. Все товарные знаки и торговые марки принадлежат их законным владельцам.
+        </p>
+        <p class="text-center text-[10px] sm:text-xs font-medium" style="color: var(--text-muted)">
+          &copy; 2026 HoneyGain.store. <span data-i18n="footerRights">Все права защищены.</span>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- СКРИПТЫ УПРАВЛЕНИЯ ИНТЕРФЕЙСОМ -->
+  <script>
+    // Словарь переводов на оба языка
+    const translations = {
+      ru: {
+        joinBtn: "Присоединиться",
+        badge: "🍯 Пассивный доход 24/7",
+        heroTitle: "Зарабатывай, даже",
+        heroTitleHighlight: "когда ты спишь",
+        heroTitleEnd: "!",
+        heroSubtitle: "Делись своим неиспользуемым интернетом и получай за это реальные деньги.",
+        heroSubtitleSec: "Honeygain — это полностью безопасная платформа для создания пассивного дохода без каких-либо вложений.",
+        btnStart: "Начать зарабатывать",
+        btnHow: "Как это работает",
+        videoTitle: "Узнай больше о Honeygain",
+        videoSubtitle: "Посмотри короткое видео о том, как работает система на практике",
+        howTitle: "Как это работает?",
+        howSubtitle: "Всего 3 простых шага отделяют тебя от стабильного пассивного дохода",
+        step1Num: "01",
+        step1Title: "Установи приложение",
+        step1Desc: "Зарегистрируйся по нашей партнерской ссылке, скачай и установи приложение Honeygain на свои устройства (ПК, смартфон или планшет).",
+        step2Num: "02",
+        step2Title: "Запусти в фоне",
+        step2Desc: "Приложение безопасно использует часть твоего неиспользуемого интернет-трафика в фоновом режиме, не замедляя твою работу.",
+        step3Num: "03",
+        step3Title: "Получай выплаты",
+        step3Desc: "Накапливай баллы и выводи реальные деньги на свой счет через PayPal или криптовалюту (JMPT) в любое время.",
+        benefitsTitle: "Наши Преимущества",
+        benefitsSubtitle: "Почему миллионы пользователей по всему миру выбирают Honeygain для заработка",
+        b1Title: "Полностью пассивный доход",
+        b1Desc: "Настрой один раз и забудь. Приложение работает автономно в фоновом режиме, принося доход круглые сутки.",
+        b2Title: "Абсолютная безопасность",
+        b2Desc: "Трафик используется только проверенными компаниями для аналитики и исследований рынка. Никакого доступа к личным данным.",
+        b3Title: "Бонус $3 при регистрации",
+        b3Desc: "Зарегистрируйся по нашей партнерской ссылке и мгновенно получи стартовый бонус $3 на свой баланс бесплатно!",
+        b4Title: "Партнерская программа 25%",
+        b4Desc: "Регистрируйся сейчас и приглашай друзей, получая пожизненно 25% от их ежедневного заработка в качестве бонуса!",
+        reviewsTitle: "Отзывы Пользователей",
+        reviewsSubtitle: "Реальные отзывы людей, которые уже зарабатывают с Honeygain по всему миру",
+        calcTitle: "Калькулятор Дохода",
+        calcSubtitle: "Рассчитай свой примерный ежемесячный заработок прямо сейчас",
+        trafficLabel: "Средний трафик в день",
+        devicesLabel: "Количество активных устройств",
+        estTitle: "Примерный доход:",
+        estPeriod: "в месяц",
+        calcDisclaimer: "* Расчеты основаны на стандартных тарифах Honeygain и могут меняться в зависимости от твоей геолокации, скорости сети и востребованности трафика.",
+        ctaTitle: "Готов начать зарабатывать?",
+        ctaSubtitle: "Зарегистрируйся прямо сейчас по кнопке ниже и мгновенно забери свой приветственный бонус $3!",
+        ctaBtn: "Зарегистрироваться + Бонус $3",
+        ctaBonusBadge: "🍯 Бонус $3 активирован",
+        footerDisclaimer: "Дисклеймер: Этот сайт (honeygain.store) является реферальным/партнерским ресурсом и не является официальным представительством компании Honeygain. Все товарные знаки и торговые марки принадлежат их законным владельцам.",
+        footerRights: "Все права защищены.",
+        footerLinkText: "Регистрация в Honeygain",
+        contestTitle: "Ежемесячный Мега-Конкурс",
+        contestSubtitle: "Участвуй в нашем розыгрыше призов для новых активных пользователей Honeygain!",
+        contestBadge: "🎉 Розыгрыш призов",
+        contestPrizePool: "Призовой фонд",
+        contestPrizePoolVal: "$100 каждый месяц",
+        contestDate: "Следующий розыгрыш",
+        contestDateVal: "1-е число каждого месяца в 20:00 UTC",
+        contestT1Title: "1-е место ($50)",
+        contestT1Desc: "Главный приз наличными на баланс или крипто-кошелек.",
+        contestT2Title: "2-е место ($30)",
+        contestT2Desc: "Второй приз за отличную активность и приглашение друзей.",
+        contestT3Title: "3-е место ($20)",
+        contestT3Desc: "Поощрительный приз за установку на несколько устройств.",
+        contestRulesTitle: "Простые правила участия:",
+        contestRule1: "Зарегистрируйся по нашей ссылке (получи гарантированные $3 сразу)",
+        contestRule2: "Установи приложение Honeygain (телефон, компьютер) и держи его активным постоянно!",
+        contestRule3: "Пригласи 3 друзей (это удваивает твои шансы!)",
+        contestNote: "Примечание: * Участие бесплатное. Один аккаунт = одна заявка в неделю. Победитель объявляется каждое 1-е число месяца в 20:00, в нашем телеграмм канале.",
+        contestTermsLink: "Обязательно прочитайте условия конкурса!",
+        contestTermsTitle: "Условия и правила конкурса",
+        contestTerms1: "Организатор конкурса является независимым партнером (реферером) платформы Honeygain. Данный конкурс проводится по инициативе владельцев сайта HoneyGain.store.",
+        contestTerms2: "Для участия в конкурсе необходимо зарегистрироваться по нашей партнерской ссылке, установить и запустить приложение Honeygain на любом устройстве.",
+        contestTerms3: "Один пользователь может зарегистрировать только один игровой/активный аккаунт. Обнаружение мультиаккаунтов или искусственной накрутки рефералов приведет к немедленной дисквалификации.",
+        contestTerms4: "Призы выплачиваются 1-го числа каждого месяца на указанный победителем криптовалютный кошелек (USDT TRC20/BSC) или баланс аккаунта Honeygain.",
+        contestTerms5: "Определение победителей происходит в прямом эфире или через верифицируемый генератор случайных чисел. Списки участников формируются на основе активных рефералов.",
+        contestTerms6: "Организатор оставляет за собой право вносить изменения в условия конкурса, предварительно уведомив об этом в официальном Телеграм-канале.",
+        contestJoinBtn: "Принять участие в конкурсе"
+      },
+      en: {
+        joinBtn: "Join Now",
+        badge: "🍯 Passive Income 24/7",
+        heroTitle: "Earn Money Even",
+        heroTitleHighlight: "While You Sleep",
+        heroTitleEnd: "!",
+        heroSubtitle: "Share your unused internet bandwidth and get paid in real money.",
+        heroSubtitleSec: "Honeygain is a completely safe platform for creating passive income without any investment.",
+        btnStart: "Start Earning",
+        btnHow: "How It Works",
+        videoTitle: "Learn More About Honeygain",
+        videoSubtitle: "Watch a short video explanation on how the system works in practice",
+        howTitle: "How It Works?",
+        howSubtitle: "Just 3 simple steps separate you from a stable passive income source",
+        step1Num: "01",
+        step1Title: "Install the App",
+        step1Desc: "Sign up using our affiliate link, download and install the Honeygain app on your devices (PC, smartphone, or tablet).",
+        step2Num: "02",
+        step2Title: "Run in Background",
+        step2Desc: "The app securely shares a fraction of your unused internet traffic in the background without slowing you down.",
+        step3Num: "03",
+        step3Title: "Get Paid",
+        step3Desc: "Accumulate points and withdraw real cash to your PayPal or cryptocurrency wallet (JMPT) at any time.",
+        benefitsTitle: "Our Advantages",
+        benefitsSubtitle: "Why millions of users worldwide choose Honeygain for earning",
+        b1Title: "100% Passive Income",
+        b1Desc: "Set it up once and forget. The application runs autonomously in the background, generating income around the clock.",
+        b2Title: "Absolute Security",
+        b2Desc: "Your traffic is used only by verified businesses for market research and analytics. Zero access to your personal data.",
+        b3Title: "$3 Signup Bonus",
+        b3Desc: "Register through our affiliate link and instantly get a starting bonus of $3 added to your balance for free!",
+        b4Title: "25% Affiliate Program",
+        b4Desc: "Register now and invite friends to receive 25% of their daily earnings for life as a bonus!",
+        reviewsTitle: "User Reviews",
+        reviewsSubtitle: "Real stories from people who are already earning passive income with Honeygain",
+        calcTitle: "Income Calculator",
+        calcSubtitle: "Calculate your estimated monthly earnings right now based on active usage",
+        trafficLabel: "Average daily traffic",
+        devicesLabel: "Active devices count",
+        estTitle: "Estimated earnings:",
+        estPeriod: "per month",
+        calcDisclaimer: "* Calculations are based on standard Honeygain rates and may vary depending on your location, internet speed, and traffic demand.",
+        ctaTitle: "Ready to Start Earning?",
+        ctaSubtitle: "Register right now using the button below and instantly claim your welcome bonus of $3!",
+        ctaBtn: "Register + Get $3 Bonus",
+        ctaBonusBadge: "🍯 $3 Bonus Activated",
+        footerDisclaimer: "Disclaimer: This website (honeygain.store) is an affiliate/referral resource and is not an official representative of Honeygain. All trademarks and registered trade brands belong to their respective owners.",
+        footerRights: "All rights reserved.",
+        footerLinkText: "Honeygain Registration",
+        contestTitle: "Monthly Mega-Contest",
+        contestSubtitle: "Join our exclusive prize giveaway for new active Honeygain users!",
+        contestBadge: "🎉 Prize Giveaway",
+        contestPrizePool: "Prize Pool",
+        contestPrizePoolVal: "$100 every month",
+        contestDate: "Next Draw",
+        contestDateVal: "1st of every month at 20:00 UTC",
+        contestT1Title: "1st Place ($50)",
+        contestT1Desc: "Main cash prize credited to your balance or crypto wallet.",
+        contestT2Title: "2nd Place ($30)",
+        contestT2Desc: "Second place prize for great activity and inviting friends.",
+        contestT3Title: "3rd Place ($20)",
+        contestT3Desc: "Consolation prize for installing on multiple devices.",
+        contestRulesTitle: "Simple entry requirements:",
+        contestRule1: "Register through our affiliate link (claim your guaranteed $3 immediately)",
+        contestRule2: "Install the Honeygain app (phone, computer) and keep it active constantly!",
+        contestRule3: "Invite 3 friends (this doubles your chances!)",
+        contestNote: "Note: * Participation is free. One account = one entry per week. The winner is announced on the 1st of every month at 20:00 in our Telegram channel.",
+        contestTermsLink: "Be sure to read the contest terms!",
+        contestTermsTitle: "Contest Terms and Conditions",
+        contestTerms1: "The contest organizer is an independent affiliate (referrer) of the Honeygain platform. This contest is organized by the owners of HoneyGain.store.",
+        contestTerms2: "To enter, you must register using our affiliate link, install, and run the Honeygain application on any device.",
+        contestTerms3: "Each participant may register only one active account. Detection of multiple accounts or fake referrals will result in immediate disqualification.",
+        contestTerms4: "Prizes are paid on the 1st of every month to the crypto wallet (USDT TRC20/BSC) or Honeygain account balance of the winner's choice.",
+        contestTerms5: "Winners are drawn live or via a verifiable random number generator. Participant lists are based on active referrees.",
+        contestTerms6: "The organizer reserves the right to modify the contest terms with prior notification in our official Telegram channel.",
+        contestJoinBtn: "Join the Monthly Contest"
+      }
+    };
+
+    // Специфические тексты отзывов на обоих языках для динамической замены
+    const reviewsData = {
+      ru: [
+        { name: "Алексей К.", text: '"Сначала сомневался, но за месяц набежало около $35 абсолютно пассивно с двух устройств. Вывел на PayPal без проблем, теперь советую всем друзьям."', country: "Россия" },
+        { name: "Елена В.", text: '"Сначала установила только себе, теперь подключила всю семью и друзей по рефке. С их активности капает очень приятный процент в 25%. Рекомендую!"', country: "Казахстан" },
+        { name: "Дмитрий С.", text: '"Занимаюсь криптой, поэтому вывод в JMPT через сеть BSC для меня просто находка. Никаких комиссий и моментальное зачисление. Супер!"', country: "Беларусь" },
+        { name: "Иван П.", text: '"Работает тихо в фоне на домашнем сервере и рабочем ПК. Около $40 в месяц чистыми за интернет, которым я все равно не пользуюсь на полную мощность."', country: "Украина" },
+        { name: "Мария Т.", text: '"Регистрационный бонус в $3 очень мотивирует начать! За две недели уже накопила на первую выплату. Безопасно, удобно и действительно работает."', country: "Латвия" },
+        { name: "Александр М.", text: '"Отличное дополнение к стипендии. Установил на телефон и ноут, за месяц накопилось $22. Выплату получил в течение суток после заказа на PayPal."', country: "Узбекистан" },
+        { name: "Ольга К.", text: '"Очень простое приложение, не перегружает систему. Сначала боялась за безопасность, но проверила — данные защищены, никаких вирусов. Буду пользоваться дальше!"', country: "Молдова" },
+        { name: "Николай Д.", text: '"Использую Honeygain уже больше полугода. Доход стабильный, на оплату интернета и мобильной связи хватает с лихвой. Отличная штука для пассивного заработка."', country: "Армения" }
+      ],
+      en: [
+        { name: "Alex K.", text: '"Was skeptical at first, but made around $35 in a month absolutely passively from two devices. Withdrew to PayPal with no issues, highly recommended."', country: "Russia" },
+        { name: "Elena V.", text: '"Started with just my phone, now connected my whole family and friends through my link. The 25% affiliate share is amazing. Highly recommend!"', country: "Kazakhstan" },
+        { name: "Dmitry S.", text: '"I do crypto, so withdrawing via JMPT on the BSC network is a life-saver. Zero fees and instant payouts. Superb!"', country: "Belarus" },
+        { name: "Ivan P.", text: '"Runs quietly in the background on my home server and work PC. About $40/month pure profit for internet bandwidth I don\'t fully use anyway."', country: "Ukraine" },
+        { name: "Maria T.", text: '"The registration bonus of $3 is a great motivator! In just two weeks, I already gathered enough for my first payout. Safe, simple, and real."', country: "Latvia" },
+        { name: "Alexander M.", text: '"A great addition to my student allowance. Installed it on my phone and laptop, earned $22 in a month. Received the payout via PayPal within 24 hours."', country: "Uzbekistan" },
+        { name: "Olga K.", text: '"Very simple app, doesn't put any load on the system. At first I was worried about safety, but did some checks - data is fully secure, no malware at all."', country: "Moldova" },
+        { name: "Nicholas D.", text: '"Have been using Honeygain for over 6 months now. The income is stable, easily covers my internet and mobile bills. An excellent tool for passive earning."', country: "Armenia" }
+      ]
+    };
+
+    // 1. Управление Языком
+    let currentLang = localStorage.getItem('lang') || 'ru';
+    
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
+      document.getElementById('currentLang').textContent = lang.toUpperCase();
+
+      // Обновление всех элементов с data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+
+      // Обновление отзывов в карусели
+      const slides = document.querySelectorAll('.carousel-slide');
+      slides.forEach((slide, index) => {
+        const data = reviewsData[lang][index];
+        if (data) {
+          slide.querySelector('h4').textContent = data.name;
+          slide.querySelector('span').textContent = data.country;
+          slide.querySelector('p').textContent = data.text;
+        }
+      });
+
+      // Обновить заголовок кнопки "Наверх" при смене языка
+      const scrollBtnEl = document.getElementById('scrollToTopBtn');
+      if (scrollBtnEl) {
+        scrollBtnEl.title = lang === 'ru' ? 'Наверх' : 'Scroll to top';
+      }
+
+      // Обновить ярлыки таймера
+      const timeLeftLabel = document.getElementById('timeLeftLabel');
+      if (timeLeftLabel) {
+        timeLeftLabel.textContent = lang === 'ru' ? 'До розыгрыша осталось:' : 'Time left until next draw:';
+      }
+      const daysLabel = document.getElementById('daysLabel');
+      if (daysLabel) daysLabel.textContent = lang === 'ru' ? 'дн' : 'days';
+      const hoursLabel = document.getElementById('hoursLabel');
+      if (hoursLabel) hoursLabel.textContent = lang === 'ru' ? 'ч' : 'hours';
+      const minsLabel = document.getElementById('minsLabel');
+      if (minsLabel) minsLabel.textContent = lang === 'ru' ? 'мин' : 'mins';
+      const secsLabel = document.getElementById('secsLabel');
+      if (secsLabel) secsLabel.textContent = lang === 'ru' ? 'сек' : 'secs';
+      
+      // Пересчитать калькулятор при смене языка (если изменятся подписи)
+      calculateEarnings();
+    }
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      const nextLang = currentLang === 'ru' ? 'en' : 'ru';
+      setLanguage(nextLang);
+    });
+
+    // 2. Управление Темой оформления
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    
+    function setTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      
+      const themeIcon = document.getElementById('themeIcon');
+      if (theme === 'dark') {
+        themeIcon.className = 'fa-solid fa-sun text-[#f6b026]';
+      } else {
+        themeIcon.className = 'fa-solid fa-moon text-slate-800';
+      }
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(nextTheme);
+    });
+
+    // Таймер конкурса
+    function updateContestTimer() {
+      const now = new Date();
+      const nextMonth = new Date();
+      if (now.getUTCDate() === 1 && now.getUTCHours() < 20) {
+        nextMonth.setUTCMonth(now.getUTCMonth(), 1);
+      } else {
+        nextMonth.setUTCMonth(now.getUTCMonth() + 1, 1);
+      }
+      nextMonth.setUTCHours(20, 0, 0, 0);
+      
+      const difference = nextMonth.getTime() - now.getTime();
+      
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((difference / 1000 / 60) % 60);
+        const seconds = Math.floor((difference / 1000) % 60);
+        
+        const dEl = document.getElementById('timerDays');
+        const hEl = document.getElementById('timerHours');
+        const mEl = document.getElementById('timerMinutes');
+        const sEl = document.getElementById('timerSeconds');
+        
+        if (dEl) dEl.textContent = String(days).padStart(2, '0');
+        if (hEl) hEl.textContent = String(hours).padStart(2, '0');
+        if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
+        if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+      } else {
+        const dEl = document.getElementById('timerDays');
+        const hEl = document.getElementById('timerHours');
+        const mEl = document.getElementById('timerMinutes');
+        const sEl = document.getElementById('timerSeconds');
+        
+        if (dEl) dEl.textContent = '00';
+        if (hEl) hEl.textContent = '00';
+        if (mEl) mEl.textContent = '00';
+        if (sEl) sEl.textContent = '00';
+      }
+    }
+
+    // Инициализация темы и языка на старте
+    setTheme(currentTheme);
+    setLanguage(currentLang);
+    updateContestTimer();
+    setInterval(updateContestTimer, 1000);
+
+    // 3. Калькулятор Дохода
+    const trafficSlider = document.getElementById('trafficSlider');
+    const devicesSlider = document.getElementById('devicesSlider');
+    const trafficVal = document.getElementById('trafficVal');
+    const devicesVal = document.getElementById('devicesVal');
+    const earningsVal = document.getElementById('earningsVal');
+
+    function calculateEarnings() {
+      const traffic = parseInt(trafficSlider.value); // в МБ
+      const devices = parseInt(devicesSlider.value);
+      
+      // Выводим выбранные значения на экран
+      if (traffic >= 1000) {
+        trafficVal.textContent = (traffic / 1000).toFixed(1) + ' GB';
+      } else {
+        trafficVal.textContent = traffic + ' MB';
+      }
+      devicesVal.textContent = devices;
+
+      // Формула: (МБ/день * 30 * устройств) * $0.0003
+      const earnings = (traffic * 30 * devices) * 0.0003;
+      earningsVal.textContent = '$' + earnings.toFixed(2);
+    }
+
+    trafficSlider.addEventListener('input', calculateEarnings);
+    devicesSlider.addEventListener('input', calculateEarnings);
+    calculateEarnings(); // начальный запуск
+
+    // 4. Карусель Отзывов (Чистый JS)
+    const carouselInner = document.getElementById('carouselInner');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const prevBtns = document.querySelectorAll('.prev-btn-action');
+    const nextBtns = document.querySelectorAll('.next-btn-action');
+    const dotsContainer = document.getElementById('carouselDots');
+    const viewport = document.getElementById('carouselViewport');
+
+    let slideIndex = 0;
+    const totalSlides = slides.length;
+    let autoPlayInterval;
+
+    // Генерация точек
+    dotsContainer.innerHTML = '';
+    for (let i = 0; i < totalSlides; i++) {
+      const dot = document.createElement('button');
+      dot.className = `w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${i === 0 ? 'bg-[#f6b026] w-6' : 'bg-slate-400/40'}`;
+      dot.setAttribute('aria-label', `Перейти к отзыву ${i + 1}`);
+      dot.addEventListener('click', () => {
+        goToSlide(i);
+        resetAutoPlay();
+      });
+      dotsContainer.appendChild(dot);
+    }
+
+    const dots = dotsContainer.querySelectorAll('button');
+
+    function updateCarousel() {
+      carouselInner.style.transform = `translateX(-${slideIndex * 100}%)`;
+      
+      // Обновление точек
+      dots.forEach((dot, index) => {
+        if (index === slideIndex) {
+          dot.className = 'w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer bg-[#f6b026] w-6';
+        } else {
+          dot.className = 'w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer bg-slate-400/40';
+        }
+      });
+    }
+
+    function nextSlide() {
+      slideIndex = (slideIndex + 1) % totalSlides;
+      updateCarousel();
+    }
+
+    function prevSlide() {
+      slideIndex = (slideIndex - 1 + totalSlides) % totalSlides;
+      updateCarousel();
+    }
+
+    function goToSlide(index) {
+      slideIndex = index;
+      updateCarousel();
+    }
+
+    // Обработчики кнопок
+    nextBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        nextSlide();
+        resetAutoPlay();
+      });
+    });
+
+    prevBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        prevSlide();
+        resetAutoPlay();
+      });
+    });
+
+    // Автопрокрутка
+    function startAutoPlay() {
+      autoPlayInterval = setInterval(nextSlide, 5000);
+    }
+
+    function stopAutoPlay() {
+      clearInterval(autoPlayInterval);
+    }
+
+    function resetAutoPlay() {
+      stopAutoPlay();
+      startAutoPlay();
+    }
+
+    // Пауза при наведении
+    viewport.addEventListener('mouseenter', stopAutoPlay);
+    viewport.addEventListener('mouseleave', startAutoPlay);
+
+    // Управление клавишами стрелок
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        prevSlide();
+        resetAutoPlay();
+      } else if (e.key === 'ArrowRight') {
+        nextSlide();
+        resetAutoPlay();
+      }
+    });
+
+    // Поддержка свайпов на тачскринах
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    viewport.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    viewport.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, {passive: true});
+
+    function handleSwipe() {
+      if (touchStartX - touchEndX > 50) {
+        // Свайп влево -> следующий слайд
+        nextSlide();
+        resetAutoPlay();
+      } else if (touchEndX - touchStartX > 50) {
+        // Свайп вправо -> предыдущий слайд
+        prevSlide();
+        resetAutoPlay();
+      }
+    }
+
+    // Старт автопрокрутки при загрузке
+    startAutoPlay();
+
+    // Кнопка прокрутки наверх
+    const scrollBtn = document.getElementById('scrollToTopBtn');
+    if (scrollBtn) {
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+          scrollBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4', 'scale-90');
+          scrollBtn.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0', 'scale-100');
+        } else {
+          scrollBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4', 'scale-90');
+          scrollBtn.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0', 'scale-100');
+        }
+      }, { passive: true });
+
+      scrollBtn.addEventListener('click', () => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+    }
+
+    // Функция показа модального окна "В разработке"
+    window.showWipModal = function(e) {
+      if (e) e.preventDefault();
+      
+      const existingModal = document.getElementById('wipModal');
+      if (existingModal) existingModal.remove();
+
+      const isEn = (document.documentElement.lang || 'ru') === 'en';
+
+      const modalHtml = `
+        <div id="wipModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" style="backdrop-filter: blur(8px); background-color: rgba(2, 6, 23, 0.65);">
+          <!-- Окно модалки -->
+          <div class="relative w-full max-w-sm rounded-2xl p-6 md:p-8 text-center border overflow-hidden shadow-2xl glass-card scale-95 transition-transform duration-300" style="background-color: var(--card-bg); border-color: var(--card-border);">
+            <!-- Декоративное свечение -->
+            <div class="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-[#f6b026]/10 blur-xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-[#f28c28]/10 blur-xl"></div>
+
+            <!-- Иконка -->
+            <div class="mx-auto w-16 h-16 rounded-full bg-[#f6b026]/10 border border-[#f6b026]/20 flex items-center justify-center text-2xl text-[#f6b026] mb-5 shadow-inner">
+              <i class="fa-solid fa-screwdriver-wrench animate-pulse"></i>
+            </div>
+
+            <!-- Заголовок -->
+            <h3 class="text-xl font-bold mb-3 tracking-tight" style="color: var(--text-main);">
+              ${isEn ? 'Under development' : 'В разработке'}
+            </h3>
+
+            <!-- Текст -->
+            <p class="text-sm leading-relaxed mb-6 text-balance" style="color: var(--text-muted);">
+              ${isEn ? 'Under development. Coming soon. Stay tuned for news!' : 'В разработке. Скоро будет доступно. Следите за новостями!'}
+            </p>
+
+            <!-- Кнопка закрытия -->
+            <button id="closeWipModal" class="w-full py-3 px-5 rounded-xl honey-gradient text-slate-950 font-bold text-sm tracking-wide uppercase shadow-lg shadow-amber-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer">
+              ${isEn ? "Great, I'll stay tuned" : 'Хорошо, буду ждать'}
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      const modal = document.getElementById('wipModal');
+      const inner = modal.querySelector('div');
+      
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        inner.classList.remove('scale-95');
+      }, 10);
+
+      function closeModal() {
+        modal.classList.add('opacity-0');
+        inner.classList.add('scale-95');
+        setTimeout(() => {
+          modal.remove();
+        }, 300);
+      }
+
+      document.getElementById('closeWipModal').addEventListener('click', closeModal);
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal();
+      });
+    };
+
+    // Функция показа модального окна Условий конкурса
+    window.showTermsModal = function(e) {
+      if (e) e.preventDefault();
+      
+      const existingModal = document.getElementById('termsModal');
+      if (existingModal) existingModal.remove();
+
+      const isEn = (document.documentElement.lang || 'ru') === 'en';
+
+      const modalHtml = `
+        <div id="termsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" style="backdrop-filter: blur(8px); background-color: rgba(2, 6, 23, 0.65);">
+          <!-- Окно модалки -->
+          <div class="relative w-full max-w-lg rounded-2xl p-6 sm:p-8 border overflow-hidden shadow-2xl glass-card scale-95 transition-transform duration-300 max-h-[85vh] flex flex-col" style="background-color: var(--card-bg); border-color: var(--card-border);">
+            <!-- Декоративное свечение -->
+            <div class="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-[#f6b026]/10 blur-xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-[#f28c28]/10 blur-xl"></div>
+
+            <!-- Заголовок -->
+            <h3 class="text-xl sm:text-2xl font-bold mb-5 tracking-tight serif-title italic flex items-center space-x-2 flex-shrink-0" style="color: #f6b026;">
+              <i class="fa-solid fa-file-contract text-lg"></i>
+              <span data-i18n="contestTermsTitle">\${translations[isEn ? 'en' : 'ru'].contestTermsTitle}</span>
+            </h3>
+
+            <!-- Текст условий (скроллящийся список) -->
+            <div class="overflow-y-auto pr-2 mb-6 text-left space-y-4 font-light text-xs sm:text-sm leading-relaxed" style="color: var(--text-muted);">
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms1">\${translations[isEn ? 'en' : 'ru'].contestTerms1}</p>
+              </div>
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms2">\${translations[isEn ? 'en' : 'ru'].contestTerms2}</p>
+              </div>
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms3">\${translations[isEn ? 'en' : 'ru'].contestTerms3}</p>
+              </div>
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms4">\${translations[isEn ? 'en' : 'ru'].contestTerms4}</p>
+              </div>
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms5">\${translations[isEn ? 'en' : 'ru'].contestTerms5}</p>
+              </div>
+              <div class="flex items-start space-x-3">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                <p data-i18n="contestTerms6">\${translations[isEn ? 'en' : 'ru'].contestTerms6}</p>
+              </div>
+            </div>
+
+            <!-- Кнопка закрытия -->
+            <button id="closeTermsModal" class="w-full py-3 px-5 rounded-xl honey-gradient text-slate-950 font-bold text-sm tracking-wide uppercase shadow-lg shadow-amber-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex-shrink-0">
+              \${isEn ? 'Close terms' : 'Закрыть условия'}
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      const modal = document.getElementById('termsModal');
+      const inner = modal.querySelector('div');
+      
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        inner.classList.remove('scale-95');
+      }, 10);
+
+      function closeModal() {
+        modal.classList.add('opacity-0');
+        inner.classList.add('scale-95');
+        setTimeout(() => {
+          modal.remove();
+        }, 300);
+      }
+
+      document.getElementById('closeTermsModal').addEventListener('click', closeModal);
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal();
+      });
+    };
+
+    // --- Система всплывающих уведомлений активности ---
+    (function() {
+      const NOTIFICATION_NAMES = [
+        // Русские
+        { name: 'Александр', gender: 'male', initials: 'А' },
+        { name: 'Дмитрий', gender: 'male', initials: 'Д' },
+        { name: 'Сергей', gender: 'male', initials: 'С' },
+        { name: 'Алексей', gender: 'male', initials: 'А' },
+        { name: 'Иван', gender: 'male', initials: 'И' },
+        { name: 'Екатерина', gender: 'female', initials: 'Е' },
+        { name: 'Ольга', gender: 'female', initials: 'О' },
+        { name: 'Анна', gender: 'female', initials: 'А' },
+        { name: 'Татьяна', gender: 'female', initials: 'Т' },
+        { name: 'Мария', gender: 'female', initials: 'М' },
+        
+        // Английские
+        { name: 'James', gender: 'male', initials: 'J' },
+        { name: 'Oliver', gender: 'male', initials: 'O' },
+        { name: 'William', gender: 'male', initials: 'W' },
+        { name: 'Henry', gender: 'male', initials: 'H' },
+        { name: 'George', gender: 'male', initials: 'G' },
+        { name: 'Emma', gender: 'female', initials: 'E' },
+        { name: 'Sophia', gender: 'female', initials: 'S' },
+        { name: 'Charlotte', gender: 'female', initials: 'C' },
+        { name: 'Amelia', gender: 'female', initials: 'A' },
+        { name: 'Lily', gender: 'female', initials: 'L' },
+
+        // Немецкие
+        { name: 'Lukas', gender: 'male', initials: 'L' },
+        { name: 'Maximilian', gender: 'male', initials: 'M' },
+        { name: 'Felix', gender: 'male', initials: 'F' },
+        { name: 'Moritz', gender: 'male', initials: 'M' },
+        { name: 'Paul', gender: 'male', initials: 'P' },
+        { name: 'Hannah', gender: 'female', initials: 'H' },
+        { name: 'Lea', gender: 'female', initials: 'L' },
+        { name: 'Laura', gender: 'female', initials: 'L' },
+        { name: 'Julia', gender: 'female', initials: 'J' },
+        { name: 'Sophie', gender: 'female', initials: 'S' },
+
+        // Французские
+        { name: 'Louis', gender: 'male', initials: 'L' },
+        { name: 'Hugo', gender: 'male', initials: 'H' },
+        { name: 'Gabriel', gender: 'male', initials: 'G' },
+        { name: 'Raphaël', gender: 'male', initials: 'R' },
+        { name: 'Arthur', gender: 'male', initials: 'A' },
+        { name: 'Camille', gender: 'female', initials: 'C' },
+        { name: 'Léa', gender: 'female', initials: 'L' },
+        { name: 'Chloé', gender: 'female', initials: 'C' },
+        { name: 'Inès', gender: 'female', initials: 'I' },
+        { name: 'Manon', gender: 'female', initials: 'M' },
+
+        // Испанские
+        { name: 'Mateo', gender: 'male', initials: 'M' },
+        { name: 'Santiago', gender: 'male', initials: 'S' },
+        { name: 'Diego', gender: 'male', initials: 'D' },
+        { name: 'Andrés', gender: 'male', initials: 'A' },
+        { name: 'Javier', gender: 'male', initials: 'J' },
+        { name: 'Valentina', gender: 'female', initials: 'V' },
+        { name: 'Isabella', gender: 'female', initials: 'I' },
+        { name: 'Camila', gender: 'female', initials: 'C' },
+        { name: 'Lucía', gender: 'female', initials: 'L' },
+        { name: 'María', gender: 'female', initials: 'M' },
+
+        // Итальянские
+        { name: 'Leonardo', gender: 'male', initials: 'L' },
+        { name: 'Alessandro', gender: 'male', initials: 'A' },
+        { name: 'Francesco', gender: 'male', initials: 'F' },
+        { name: 'Marco', gender: 'male', initials: 'M' },
+        { name: 'Andrea', gender: 'male', initials: 'A' },
+        { name: 'Sofia', gender: 'female', initials: 'S' },
+        { name: 'Giulia', gender: 'female', initials: 'G' },
+        { name: 'Aurora', gender: 'female', initials: 'A' },
+        { name: 'Ginevra', gender: 'female', initials: 'G' },
+        { name: 'Alice', gender: 'female', initials: 'A' },
+
+        // Китайские
+        { name: 'Wei', gender: 'male', initials: 'W' },
+        { name: 'Chen', gender: 'male', initials: 'C' },
+        { name: 'Li', gender: 'male', initials: 'L' },
+        { name: 'Wang', gender: 'male', initials: 'W' },
+        { name: 'Zhang', gender: 'male', initials: 'Z' },
+        { name: 'Yuki', gender: 'female', initials: 'Y' },
+        { name: 'Mei', gender: 'female', initials: 'M' },
+        { name: 'Xia', gender: 'female', initials: 'X' },
+        { name: 'Jing', gender: 'female', initials: 'J' },
+        { name: 'Lin', gender: 'female', initials: 'L' },
+
+        // Арабские
+        { name: 'Mohammed', gender: 'male', initials: 'M' },
+        { name: 'Ahmed', gender: 'male', initials: 'A' },
+        { name: 'Ali', gender: 'male', initials: 'A' },
+        { name: 'Ibrahim', gender: 'male', initials: 'I' },
+        { name: 'Hassan', gender: 'male', initials: 'H' },
+        { name: 'Fatima', gender: 'female', initials: 'F' },
+        { name: 'Khadija', gender: 'female', initials: 'K' },
+        { name: 'Aisha', gender: 'female', initials: 'A' },
+        { name: 'Noor', gender: 'female', initials: 'N' },
+        { name: 'Layla', gender: 'female', initials: 'L' },
+
+        // Индийские
+        { name: 'Arjun', gender: 'male', initials: 'A' },
+        { name: 'Rohan', gender: 'male', initials: 'R' },
+        { name: 'Vikram', gender: 'male', initials: 'V' },
+        { name: 'Karan', gender: 'male', initials: 'K' },
+        { name: 'Raj', gender: 'male', initials: 'R' },
+        { name: 'Ananya', gender: 'female', initials: 'A' },
+        { name: 'Priya', gender: 'female', initials: 'P' },
+        { name: 'Neha', gender: 'female', initials: 'N' },
+        { name: 'Sneha', gender: 'female', initials: 'S' },
+        { name: 'Deepika', gender: 'female', initials: 'D' }
+      ];
+
+      const NOTIFICATION_ACTIONS = {
+        link: {
+          ru: { male: 'перешёл по ссылке', female: 'перешла по ссылке' },
+          en: 'followed the link',
+          icon: '🔗',
+          bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+        },
+        signup: {
+          ru: { male: 'зарегистрировался', female: 'зарегистрировалась' },
+          en: 'signed up',
+          icon: '👤',
+          bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+        },
+        bonus: {
+          ru: { male: 'получил бонус $3', female: 'получила бонус $3' },
+          en: 'got $3 bonus',
+          icon: '🎁',
+          bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+        },
+        earn: {
+          ru: { male: 'начал зарабатывать', female: 'начала зарабатывать' },
+          en: 'started earning',
+          icon: '⚡',
+          bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+        },
+        app: {
+          ru: { male: 'установил приложение', female: 'установила приложение' },
+          en: 'installed the app',
+          icon: '📱',
+          bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
+        }
+      };
+
+      const container = document.getElementById('activityNotification');
+      if (!container) return;
+
+      let timeoutId = null;
+
+      function showToast() {
+        const isEn = (document.documentElement.lang || 'ru') === 'en';
+        
+        // Рандомный объект имени
+        const nameObj = NOTIFICATION_NAMES[Math.floor(Math.random() * NOTIFICATION_NAMES.length)];
+        // Рандомный ключ действия
+        const actionKeys = Object.keys(NOTIFICATION_ACTIONS);
+        const actionKey = actionKeys[Math.floor(Math.random() * actionKeys.length)];
+        const actionObj = NOTIFICATION_ACTIONS[actionKey];
+
+        // Текст в зависимости от пола и языка
+        const actionText = isEn 
+          ? actionObj.en
+          : (nameObj.gender === 'male' ? actionObj.ru.male : actionObj.ru.female);
+
+        const timeTexts = isEn
+          ? ['just now', '1 min ago', '2 min ago', '30s ago']
+          : ['только что', '1 мин. назад', '2 мин. назад', '30 сек. назад'];
+        const timeAgo = timeTexts[Math.floor(Math.random() * timeTexts.length)];
+
+        const toastHtml = `
+          <div class="w-full p-4 rounded-2xl border backdrop-blur-xl flex items-center space-x-3.5 pointer-events-auto relative overflow-hidden group transition-all duration-300 hover:shadow-[0_20px_50px_rgba(246,176,38,0.1)] dark:hover:shadow-[0_20px_50px_rgba(246,176,38,0.05)]" style="background-color: var(--header-bg); border-color: var(--card-border); box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.1);">
+            <!-- Аватар с индикатором активности -->
+            <div class="relative flex-shrink-0">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold border transition-all duration-300 shadow-md group-hover:scale-105 \${actionObj.bg}">
+                <span>\${nameObj.initials}</span>
+              </div>
+              <span class="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              </span>
+            </div>
+
+            <!-- Контент -->
+            <div class="flex-1 min-w-0 text-left">
+              <div class="flex items-center space-x-1.5 mb-0.5">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-amber-500 dark:text-amber-400">
+                  \${isEn ? 'Activity' : 'Активность'}
+                </span>
+                <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                <span class="text-[10px] font-light flex items-center" style="color: var(--text-muted);">
+                  <i class="fa-regular fa-clock mr-1 text-[9px]"></i>
+                  \${timeAgo}
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm font-normal leading-snug" style="color: var(--text-main);">
+                <span class="font-bold text-slate-800 dark:text-slate-100">\${nameObj.name}</span> 
+                <span class="font-light" style="color: var(--text-muted);">\${actionText}</span>
+              </p>
+            </div>
+
+            <!-- Иконка статуса -->
+            <div class="w-9 h-9 rounded-full bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 flex items-center justify-center text-base flex-shrink-0 shadow-inner group-hover:rotate-12 transition-transform duration-300 select-none">
+              \${actionObj.icon}
+            </div>
+
+            <!-- Тонкий анимированный индикатор оставшегося времени -->
+            <div class="absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 rounded-b-2xl animate-toast-progress"></div>
+          </div>
+        `;
+
+        container.innerHTML = toastHtml;
+        
+        // Появление
+        container.classList.remove('opacity-0', 'translate-y-8', 'scale-95', 'pointer-events-none');
+        container.classList.add('opacity-100', 'translate-y-0', 'scale-100', 'pointer-events-auto');
+
+        // Скрыть через 5.5 сек
+        timeoutId = setTimeout(() => {
+          container.classList.remove('opacity-100', 'translate-y-0', 'scale-100', 'pointer-events-auto');
+          container.classList.add('opacity-0', 'translate-y-8', 'scale-95', 'pointer-events-none');
+          
+          // Планируем следующее через 8-15 сек
+          const nextInterval = Math.floor(Math.random() * (15000 - 8000 + 1)) + 8000;
+          timeoutId = setTimeout(showToast, nextInterval);
+        }, 5500);
+      }
+
+      // Запускаем первое уведомление через 4 секунды после старта
+      setTimeout(showToast, 4000);
+    })();
+    };
+  </script>
+</body>
+</html>
