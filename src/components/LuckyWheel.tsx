@@ -456,34 +456,7 @@ export function LuckyWheel({ lang, theme, referralLink, t }: LuckyWheelProps) {
                   </div>
                 )}
 
-                {/* Mode Selector Toggle: Live vs Demo (very cool user experience!) */}
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/20 border border-white/5">
-                  <div>
-                    <div className="text-[11px] font-bold text-white">
-                      {lang === "ru" ? "Режим вращения:" : "Wheel Mode:"}
-                    </div>
-                    <div className="text-[10px] opacity-70" style={{ color: "var(--text-muted)", fontFamily: "Georgia" }}>
-                      {isDemoMode 
-                        ? (lang === "ru" ? "Демо (спины не сохраняются)" : "Demo (spins not saved)")
-                        : (lang === "ru" ? "Реальный (сохраняется в браузер)" : "Real (saved in browser)")
-                      }
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (isSpinning) return;
-                      setIsDemoMode(!isDemoMode);
-                    }}
-                    disabled={isSpinning}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-                      isDemoMode 
-                        ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10 hover:bg-amber-400" 
-                        : "bg-slate-900 border border-amber-500/20 text-amber-500 hover:bg-slate-850"
-                    }`}
-                  >
-                    {isDemoMode ? (lang === "ru" ? "ДЕМО" : "DEMO") : (lang === "ru" ? "РЕАЛЬНЫЙ" : "REAL")}
-                  </button>
-                </div>
+
 
               </div>
             </div>
