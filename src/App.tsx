@@ -472,9 +472,9 @@ export default function App() {
       <LuckyWheel lang={lang} theme={theme} referralLink={referralLink} t={t} />
 
       {/* ВИДЕО-БЛОК (VIDEO SECTION) */}
-      <section className="pb-24 sm:pb-32 px-4">
+      <section className="pb-24 sm:pb-32 px-4 pt-[60px]">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
+          <div className="text-center mb-10 pl-0 pt-[60px]">
             <h2 className="font-semibold tracking-tight mb-3 serif-title italic max-w-full lg:w-[768px] mx-auto text-center" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.videoTitle}</h2>
             <p className="text-sm sm:text-base max-w-3xl mx-auto font-light" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '27px', paddingTop: '25px', fontFamily: 'Georgia' }}>{t.videoSubtitle}</p>
           </div>
