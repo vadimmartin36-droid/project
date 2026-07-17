@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { NotificationToast } from './components/NotificationToast';
 import { AIConsultant } from './components/AIConsultant';
 import { LuckyWheel } from './components/LuckyWheel';
+import { AuthModal } from './components/AuthModal';
 
 export default function App() {
   // Инициализация темы и языка из localStorage или значений по умолчанию
@@ -135,6 +136,34 @@ export default function App() {
     localStorage.setItem('lang', lang);
   }, [lang]);
 
+  // Состояния авторизации
+  const [user, setUser] = useState<any | null>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('honeygain_auth_token');
+    if (token) {
+      fetch('/api/auth/me', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      })
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Stale token');
+      })
+      .then(data => {
+        if (data.success) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('honeygain_auth_token');
+      });
+    }
+  }, []);
+
   // Автоматическое перелистывание карусели каждые 5 секунд
   useEffect(() => {
     if (isHovered) return;
@@ -210,8 +239,8 @@ export default function App() {
             <a href="#cta" className="hover:text-[var(--text-main)] transition-colors text-honey font-bold" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Бонус $3' : 'Bonus $3'}</a>
           </div>
 
-          {/* Кнопки управления (Тема, Язык, CTA) */}
-          <div className="flex items-center space-x-3 sm:space-x-6">
+          {/* Кнопки управления (Тема, Язык, Авторизация, CTA) */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             
             {/* Кнопка смены темы */}
             <button 
@@ -225,22 +254,97 @@ export default function App() {
             {/* Кнопка переключения языка */}
             <button 
               onClick={() => setLang(lang === 'ru' ? 'en' : 'ru')}
-              className="h-9 px-3 rounded-full glass-card flex items-center space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 transition-all"
+              className="h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 transition-all"
             >
               <i className="fa-solid fa-globe text-[#f6b026]"></i>
               <span style={{ fontFamily: 'Georgia' }}>{lang.toUpperCase()}</span>
             </button>
 
-            {/* Кнопка «Присоединиться» */}
-            <a 
-              href={referralLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex px-5 py-2 rounded-full honey-gradient text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/10 hover:scale-[1.05] active:scale-95 transition-all text-center"
-              style={{ fontFamily: 'Georgia' }}
-            >
-              {t.joinBtn}
-            </a>
+            {/* ПРОФИЛЬ ИЛИ ВХОД */}
+            {user ? (
+              <div className="relative">
+                <button 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="h-9 px-2 sm:px-4 rounded-full glass-card flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold cursor-pointer border border-[#f6b026]/30 hover:bg-white/5 transition-all select-none"
+                >
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#f6b026] text-slate-950 flex items-center justify-center font-bold text-[10px] sm:text-xs shadow shadow-amber-500/20">
+                    {user.username.substring(0, 1).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline text-[var(--text-main)]" style={{ fontFamily: 'Georgia' }}>{user.username}</span>
+                  <span className="text-honey font-mono font-bold">${user.balance.toFixed(2)}</span>
+                  <i className={`fa-solid fa-chevron-down text-[8px] sm:text-[10px] text-[var(--text-muted)] transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}></i>
+                </button>
+
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <>
+                      {/* Backdrop overlay */}
+                      <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-56 rounded-2xl border p-4 shadow-2xl glass-card z-50 text-left"
+                        style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--card-border)' }}
+                      >
+                        <div className="border-b border-[var(--card-border)] pb-3 mb-3">
+                          <div className="text-[10px] text-[var(--text-muted)] font-light" style={{ fontFamily: 'Georgia' }}>
+                            {lang === 'ru' ? 'Вы вошли как:' : 'Logged in as:'}
+                          </div>
+                          <div className="text-xs sm:text-sm font-bold text-white tracking-tight truncate mt-0.5" style={{ fontFamily: 'Georgia' }}>
+                            {user.email}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-3 text-xs">
+                          <div className="flex justify-between items-center text-[var(--text-muted)]">
+                            <span style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Ваш баланс:' : 'Your balance:'}</span>
+                            <span className="font-bold text-honey font-mono">${user.balance.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[var(--text-muted)]">
+                            <span style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Статус:' : 'Status:'}</span>
+                            <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Active
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-[var(--text-muted)] text-[10px] pt-1">
+                            <span style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Создан:' : 'Registered:'}</span>
+                            <span>{new Date(user.registeredAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem('honeygain_auth_token');
+                            setUser(null);
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                          style={{ fontFamily: 'Georgia' }}
+                        >
+                          <i className="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                          <span>{lang === 'ru' ? 'Выйти' : 'Sign Out'}</span>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsAuthOpen(true)}
+                className="h-9 px-3 rounded-full glass-card flex items-center space-x-1.5 text-xs font-bold cursor-pointer text-[var(--text-main)] hover:bg-white/5 transition-all"
+                style={{ fontFamily: 'Georgia' }}
+              >
+                <i className="fa-solid fa-user text-[#f6b026]"></i>
+                <span>{lang === 'ru' ? 'Вход' : 'Sign In'}</span>
+              </button>
+            )}
+
+
           </div>
         </div>
       </header>
@@ -469,7 +573,24 @@ export default function App() {
       </section>
 
       {/* РУЛЕТКА / КОЛЕСО УДАЧИ (LUCKY WHEEL SECTION) */}
-      <LuckyWheel lang={lang} theme={theme} referralLink={referralLink} t={t} />
+      <LuckyWheel 
+        lang={lang} 
+        theme={theme} 
+        referralLink={referralLink} 
+        t={t} 
+        user={user}
+        onBalanceUpdate={(newBalance) => {
+          setUser((prev: any) => prev ? { ...prev, balance: newBalance } : prev);
+        }}
+        onOpenAuth={() => setIsAuthOpen(true)}
+      />
+
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        lang={lang} 
+        onLoginSuccess={(userData) => setUser(userData)} 
+      />
 
       {/* ВИДЕО-БЛОК (VIDEO SECTION) */}
       <section className="pb-24 sm:pb-32 px-4 pt-[60px]">

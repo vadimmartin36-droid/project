@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
@@ -10,7 +11,390 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.set("trust proxy", true);
   app.use(express.json());
+
+  // Server-side Lucky Wheel storage & restrictions (one IP, one participation, caching/IP change protected)
+  interface SpinRecord {
+    ip: string;
+    fingerprint: string;
+    userId?: string;
+    timestamp: number;
+  }
+
+  interface UserRecord {
+    id: string;
+    username: string;
+    email: string;
+    passwordHash: string;
+    registeredAt: number;
+    balance: number;
+    token: string;
+  }
+
+  const SPINS_FILE = path.join(process.cwd(), "spins.json");
+  const USERS_FILE = path.join(process.cwd(), "users.json");
+  let spins: SpinRecord[] = [];
+  let users: UserRecord[] = [];
+
+  // Load existing spins and users on startup
+  try {
+    if (fs.existsSync(SPINS_FILE)) {
+      const fileData = fs.readFileSync(SPINS_FILE, "utf-8");
+      spins = JSON.parse(fileData);
+      // Filter out entries older than 24 hours on startup to keep memory light
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      spins = spins.filter(s => s.timestamp > oneDayAgo);
+    }
+  } catch (error) {
+    console.error("Error loading spins.json:", error);
+    spins = [];
+  }
+
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const fileData = fs.readFileSync(USERS_FILE, "utf-8");
+      users = JSON.parse(fileData);
+    }
+  } catch (error) {
+    console.error("Error loading users.json:", error);
+    users = [];
+  }
+
+  function saveSpins() {
+    try {
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      spins = spins.filter(s => s.timestamp > oneDayAgo);
+      fs.writeFileSync(SPINS_FILE, JSON.stringify(spins, null, 2), "utf-8");
+    } catch (error) {
+      console.error("Error saving spins.json:", error);
+    }
+  }
+
+  function saveUsers() {
+    try {
+      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
+    } catch (error) {
+      console.error("Error saving users.json:", error);
+    }
+  }
+
+  // Simple hashing function for password protection
+  function hashPassword(pwd: string): string {
+    let hash = 0;
+    for (let i = 0; i < pwd.length; i++) {
+      hash = (hash << 5) - hash + pwd.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+    }
+    return "hash_" + hash.toString(16);
+  }
+
+  const PRIZE_PROBABILITIES = [15, 25, 15, 20, 5, 10, 5, 5]; // Matches PRIZES indexes in frontend
+
+  function getWeightedPrizeIndex(): number {
+    const totalWeight = PRIZE_PROBABILITIES.reduce((sum, w) => sum + w, 0);
+    let randomNum = Math.random() * totalWeight;
+    for (let i = 0; i < PRIZE_PROBABILITIES.length; i++) {
+      if (randomNum < PRIZE_PROBABILITIES[i]) {
+        return i;
+      }
+      randomNum -= PRIZE_PROBABILITIES[i];
+    }
+    return 0; // Fallback
+  }
+
+  function isPublicIp(ip: string): boolean {
+    if (!ip) return false;
+    let cleanIp = ip.replace(/^::ffff:/i, "").trim();
+    if (cleanIp === "127.0.0.1" || cleanIp === "::1" || cleanIp === "localhost" || cleanIp === "") {
+      return false;
+    }
+    if (cleanIp.startsWith("10.") || cleanIp.startsWith("192.168.")) {
+      return false;
+    }
+    if (cleanIp.startsWith("172.")) {
+      const parts = cleanIp.split(".");
+      if (parts.length >= 2) {
+        const second = parseInt(parts[1], 10);
+        if (second >= 16 && second <= 31) return false;
+      }
+    }
+    if (cleanIp.startsWith("fe80:") || cleanIp.startsWith("fc00:") || cleanIp.startsWith("fd00:")) {
+      return false;
+    }
+    return true;
+  }
+
+  function getClientIp(req: express.Request): string {
+    const headersToCheck = [
+      "x-forwarded-for",
+      "x-real-ip",
+      "cf-connecting-ip",
+      "true-client-ip",
+      "x-client-ip"
+    ];
+
+    for (const header of headersToCheck) {
+      const val = req.headers[header];
+      if (val) {
+        if (typeof val === "string") {
+          const parts = val.split(",");
+          for (const part of parts) {
+            const trimmed = part.trim();
+            if (trimmed && isPublicIp(trimmed)) {
+              return trimmed;
+            }
+          }
+        } else if (Array.isArray(val) && val.length > 0) {
+          const trimmed = val[0].trim();
+          if (trimmed && isPublicIp(trimmed)) {
+            return trimmed;
+          }
+        }
+      }
+    }
+
+    const directIp = req.ip || req.socket.remoteAddress || "";
+    return directIp.replace(/^::ffff:/i, "").trim();
+  }
+
+  // --- AUTHENTICATION ENDPOINTS ---
+
+  // Register Endpoint
+  app.post("/api/auth/register", (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      if (!username || !email || !password) {
+        return res.status(400).json({ error: "Все поля обязательны для заполнения" });
+      }
+
+      const cleanUsername = username.trim();
+      const cleanEmail = email.trim().toLowerCase();
+
+      // Email format validation
+      if (!cleanEmail.includes("@") || cleanEmail.length < 5) {
+        return res.status(400).json({ error: "Некорректный формат email" });
+      }
+
+      if (cleanUsername.length < 3) {
+        return res.status(400).json({ error: "Имя пользователя должно быть не менее 3 символов" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
+      }
+
+      // Check if username already exists
+      const usernameExists = users.some(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
+      if (usernameExists) {
+        return res.status(400).json({ error: "Это имя пользователя уже занято" });
+      }
+
+      // Check if email already exists
+      const emailExists = users.some(u => u.email === cleanEmail);
+      if (emailExists) {
+        return res.status(400).json({ error: "Этот адрес электронной почты уже зарегистрирован" });
+      }
+
+      // Create new user with standard Honeygain starting bonus ($3)
+      const userId = "usr_" + Math.random().toString(36).substring(2, 11);
+      const token = "tok_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      const newUser: UserRecord = {
+        id: userId,
+        username: cleanUsername,
+        email: cleanEmail,
+        passwordHash: hashPassword(password),
+        registeredAt: Date.now(),
+        balance: 3.00, // Starts with a super nice $3 starting bonus!
+        token
+      };
+
+      users.push(newUser);
+      saveUsers();
+
+      // Return user data without sensitive passwordHash
+      const { passwordHash: _, ...userResponse } = newUser;
+      return res.json({ success: true, user: userResponse });
+    } catch (err) {
+      console.error("Error during registration:", err);
+      res.status(500).json({ error: "Внутренняя ошибка сервера" });
+    }
+  });
+
+  // Login Endpoint
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { loginIdentifier, password } = req.body; // loginIdentifier can be username or email
+      if (!loginIdentifier || !password) {
+        return res.status(400).json({ error: "Пожалуйста, введите логин и пароль" });
+      }
+
+      const cleanIdentifier = loginIdentifier.trim();
+      const user = users.find(u => 
+        u.username.toLowerCase() === cleanIdentifier.toLowerCase() || 
+        u.email === cleanIdentifier.toLowerCase()
+      );
+
+      if (!user) {
+        return res.status(400).json({ error: "Пользователь с таким именем или email не найден" });
+      }
+
+      const incomingHash = hashPassword(password);
+      if (user.passwordHash !== incomingHash) {
+        return res.status(400).json({ error: "Неверный пароль" });
+      }
+
+      // Generate a new token upon fresh login to ensure freshness
+      user.token = "tok_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      saveUsers();
+
+      const { passwordHash: _, ...userResponse } = user;
+      return res.json({ success: true, user: userResponse });
+    } catch (err) {
+      console.error("Error during login:", err);
+      res.status(500).json({ error: "Внутренняя ошибка сервера" });
+    }
+  });
+
+  // Session Me Check Endpoint
+  app.post("/api/auth/me", (req, res) => {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(401).json({ error: "Не авторизован" });
+      }
+
+      const user = users.find(u => u.token === token);
+      if (!user) {
+        return res.status(401).json({ error: "Невалидный сессионный токен" });
+      }
+
+      const { passwordHash: _, ...userResponse } = user;
+      return res.json({ success: true, user: userResponse });
+    } catch (err) {
+      console.error("Error verifying token:", err);
+      res.status(500).json({ error: "Внутренняя ошибка сервера" });
+    }
+  });
+
+  // GET or POST Route to check wheel status (using POST to securely accept fingerprint and optional auth token)
+  app.post("/api/wheel-status", (req, res) => {
+    try {
+      const { fingerprint, token } = req.body;
+      const ip = getClientIp(req);
+      const now = Date.now();
+      const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours
+
+      // Resolve user if token is provided
+      let userId: string | undefined = undefined;
+      if (token) {
+        const matchedUser = users.find(u => u.token === token);
+        if (matchedUser) {
+          userId = matchedUser.id;
+        }
+      }
+
+      // Find if this IP (only if public), Fingerprint, or User has already spun in the last 24 hours
+      const record = spins.find(s => {
+        const isIpMatch = isPublicIp(ip) && isPublicIp(s.ip) && s.ip === ip;
+        const isFpMatch = fingerprint && s.fingerprint && s.fingerprint === fingerprint;
+        const isUserMatch = userId && s.userId && s.userId === userId;
+        return (isIpMatch || isFpMatch || isUserMatch) && (now - s.timestamp < cooldownPeriod);
+      });
+
+      if (record) {
+        const remainingMs = cooldownPeriod - (now - record.timestamp);
+        return res.json({ cooldownSeconds: Math.ceil(remainingMs / 1000) });
+      }
+
+      return res.json({ cooldownSeconds: 0 });
+    } catch (error) {
+      console.error("Error checking wheel status:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  // POST Route to execute spin
+  app.post("/api/wheel-spin", (req, res) => {
+    try {
+      const { fingerprint, token } = req.body;
+      if (!fingerprint) {
+        return res.status(400).json({ error: "Fingerprint is required" });
+      }
+
+      const ip = getClientIp(req);
+      const now = Date.now();
+      const cooldownPeriod = 24 * 60 * 60 * 1000;
+
+      // Resolve user if token is provided
+      let activeUser: UserRecord | undefined = undefined;
+      if (token) {
+        activeUser = users.find(u => u.token === token);
+      }
+
+      // Verify cooldown one more time across IP, Fingerprint, and User ID
+      const record = spins.find(s => {
+        const isIpMatch = isPublicIp(ip) && isPublicIp(s.ip) && s.ip === ip;
+        const isFpMatch = s.fingerprint === fingerprint;
+        const isUserMatch = activeUser && s.userId && s.userId === activeUser.id;
+        return (isIpMatch || isFpMatch || isUserMatch) && (now - s.timestamp < cooldownPeriod);
+      });
+
+      if (record) {
+        const remainingMs = cooldownPeriod - (now - record.timestamp);
+        return res.status(400).json({ 
+          error: "Cooldown active", 
+          cooldownSeconds: Math.ceil(remainingMs / 1000) 
+        });
+      }
+
+      // Roll secure prize index on server
+      const selectedIndex = getWeightedPrizeIndex();
+
+      // Register spin on server
+      spins.push({
+        ip,
+        fingerprint,
+        userId: activeUser ? activeUser.id : undefined,
+        timestamp: now
+      });
+      saveSpins();
+
+      // Dynamic immersive update: if logged in, we add actual prize to their profile balance!
+      // Prizes array mapping:
+      // index 0: +$1.00 Bonus
+      // index 1: +$0.50 Bonus
+      // index 2: +$1.50 Bonus
+      // index 3: Double Income Boost (1 hour)
+      // index 4: +$5.00 Jackpot Bonus
+      // index 5: +$0.20 Starter Bonus
+      // index 6: Contest Entry Ticket
+      // index 7: +10% Referral Booster
+      if (activeUser) {
+        let prizeAdded = 0;
+        if (selectedIndex === 0) prizeAdded = 1.00;
+        else if (selectedIndex === 1) prizeAdded = 0.50;
+        else if (selectedIndex === 2) prizeAdded = 1.50;
+        else if (selectedIndex === 4) prizeAdded = 5.00;
+        else if (selectedIndex === 5) prizeAdded = 0.20;
+
+        if (prizeAdded > 0) {
+          activeUser.balance = parseFloat((activeUser.balance + prizeAdded).toFixed(2));
+          saveUsers();
+        }
+      }
+
+      return res.json({ 
+        success: true, 
+        prizeIndex: selectedIndex,
+        newBalance: activeUser ? activeUser.balance : undefined
+      });
+    } catch (error) {
+      console.error("Error executing spin:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
 
   // API Route for chat
   app.post("/api/chat", async (req, res) => {

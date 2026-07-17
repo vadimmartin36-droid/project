@@ -6,6 +6,9 @@ interface LuckyWheelProps {
   theme: "light" | "dark";
   referralLink: string;
   t: any;
+  user: any | null;
+  onBalanceUpdate: (newBalance: number) => void;
+  onOpenAuth: () => void;
 }
 
 interface Prize {
@@ -111,41 +114,149 @@ const PRIZES: Prize[] = [
   },
 ];
 
-export function LuckyWheel({ lang, theme, referralLink, t }: LuckyWheelProps) {
+// Robust Browser Fingerprinting Function (Canvas, WebGL, User-Agent, Hardware parameters)
+async function generateBrowserFingerprint(): Promise<string> {
+  const parts = [
+    navigator.userAgent || "",
+    navigator.language || "",
+    screen.colorDepth || "",
+    screen.width + "x" + screen.height,
+    new Date().getTimezoneOffset(),
+    navigator.platform || "",
+    navigator.hardwareConcurrency || "",
+    (navigator as any).deviceMemory || ""
+  ];
+
+  // Canvas Fingerprinting
+  try {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      canvas.width = 200;
+      canvas.height = 50;
+      ctx.textBaseline = "top";
+      ctx.font = "14px 'Arial'";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "#f60";
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = "#069";
+      ctx.fillText("LuckyWheel,?!", 2, 15);
+      ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+      ctx.fillText("LuckyWheel,?!", 4, 17);
+      parts.push(canvas.toDataURL());
+    }
+  } catch (e) {
+    // Canvas fingerprinting failed/blocked
+  }
+
+  // WebGL Fingerprinting
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")) as any;
+    if (gl) {
+      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      if (debugInfo) {
+        parts.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
+        parts.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+      }
+    }
+  } catch (e) {
+    // WebGL fingerprinting failed/blocked
+  }
+
+  const rawString = parts.join("|||");
+  
+  try {
+    const msgUint8 = new TextEncoder().encode(rawString);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch (err) {
+    // Fallback simple hash
+    let hash = 5381;
+    for (let i = 0; i < rawString.length; i++) {
+      hash = (hash * 33) ^ rawString.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+  }
+}
+
+export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate, onOpenAuth }: LuckyWheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [prizeIndex, setPrizeIndex] = useState<number | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [fingerprint, setFingerprint] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   
   // Audio state
   const [audioFeedback, setAudioFeedback] = useState(true);
 
-  // Load cooldown from localStorage
+  // Initialize fingerprint and check server-side spin limit on load
   useEffect(() => {
-    const updateCooldown = () => {
-      const lastSpin = localStorage.getItem("honeygain_last_spin");
-      if (lastSpin) {
-        const lastSpinTime = parseInt(lastSpin, 10);
-        const now = Date.now();
-        const difference = now - lastSpinTime;
-        const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in ms
-        
-        if (difference < cooldownPeriod) {
-          setCooldownSeconds(Math.ceil((cooldownPeriod - difference) / 1000));
-        } else {
-          setCooldownSeconds(0);
+    let active = true;
+
+    // Quick client-side check from local storage to prevent rendering flash
+    const lastSpin = localStorage.getItem("honeygain_last_spin");
+    if (lastSpin) {
+      const lastSpinTime = parseInt(lastSpin, 10);
+      const now = Date.now();
+      const difference = now - lastSpinTime;
+      const cooldownPeriod = 24 * 60 * 60 * 1000;
+      if (difference < cooldownPeriod) {
+        setCooldownSeconds(Math.ceil((cooldownPeriod - difference) / 1000));
+      }
+    }
+
+    const initFingerprint = async () => {
+      try {
+        const fp = await generateBrowserFingerprint();
+        if (!active) return;
+        setFingerprint(fp);
+
+        // Fetch server-side status (with user token if available)
+        const response = await fetch("/api/wheel-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fingerprint: fp, token: user?.token })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (active && data.cooldownSeconds !== undefined) {
+            setCooldownSeconds(data.cooldownSeconds);
+          }
         }
-      } else {
-        setCooldownSeconds(0);
+      } catch (err) {
+        console.error("Error fetching status:", err);
+      } finally {
+        if (active) setIsLoading(false);
       }
     };
 
-    updateCooldown();
-    const interval = setInterval(updateCooldown, 1000);
+    initFingerprint();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // Active countdown timer interval
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [cooldownSeconds]);
 
   // Format Cooldown Time
   const formatCooldown = (totalSeconds: number) => {
@@ -155,62 +266,77 @@ export function LuckyWheel({ lang, theme, referralLink, t }: LuckyWheelProps) {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  // Roll weighted prize index
-  const getWeightedPrizeIndex = (): number => {
-    const totalWeight = PRIZES.reduce((sum, p) => sum + p.probability, 0);
-    let randomNum = Math.random() * totalWeight;
-    
-    for (let i = 0; i < PRIZES.length; i++) {
-      if (randomNum < PRIZES[i].probability) {
-        return i;
-      }
-      randomNum -= PRIZES[i].probability;
-    }
-    return 0; // Fallback
-  };
-
-  const handleSpin = () => {
+  const handleSpin = async () => {
     if (isSpinning) return;
     if (cooldownSeconds > 0 && !isDemoMode) return;
 
-    // Pick a random prize based on weight
-    const selectedIndex = getWeightedPrizeIndex();
     setIsSpinning(true);
-    setPrizeIndex(selectedIndex);
+    setErrorMessage("");
 
-    // Number of complete spins + landing segment positioning
-    const spinsCount = 6 + Math.floor(Math.random() * 3); // 6 to 8 full spins
-    const segmentAngle = 360 / 8;
-    // We target the center of the segment, offset slightly from edges for natural look
-    const randomOffsetInSegment = Math.floor(Math.random() * (segmentAngle - 10)) + 5;
-    
-    // Rotation calculations (SVG starts at 0, 12 o'clock pointer)
-    // To land on index 'i', we rotate counter-clockwise by 'i * segmentAngle'
-    const targetDegrees = (spinsCount * 360) + (360 - (selectedIndex * segmentAngle) - segmentAngle / 2);
-    
-    // Apply animation rotation
-    setRotation(targetDegrees);
+    try {
+      // Send secure spin request to server (include token if available)
+      const response = await fetch("/api/wheel-spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fingerprint, token: user?.token })
+      });
 
-    // Store timestamp if not in demo mode
-    if (!isDemoMode) {
-      localStorage.setItem("honeygain_last_spin", Date.now().toString());
-    }
-
-    // Tick audio sound waves or click visual indicator
-    let ticksPlayed = 0;
-    const ticksCount = 40;
-    const tickInterval = setInterval(() => {
-      ticksPlayed++;
-      if (ticksPlayed >= ticksCount) {
-        clearInterval(tickInterval);
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.cooldownSeconds) {
+          setCooldownSeconds(data.cooldownSeconds);
+          localStorage.setItem("honeygain_last_spin", (Date.now() - (24 * 60 * 60 * 1000 - data.cooldownSeconds * 1000)).toString());
+        }
+        setIsSpinning(false);
+        setErrorMessage(data.error || "Ошибка вращения");
+        return;
       }
-    }, 120);
 
-    // Complete spin action
-    setTimeout(() => {
+      const data = await response.json();
+      const selectedIndex = data.prizeIndex;
+
+      setPrizeIndex(selectedIndex);
+
+      // If user has a new balance, update it
+      if (data.newBalance !== undefined) {
+        onBalanceUpdate(data.newBalance);
+      }
+
+      // Number of complete spins + landing segment positioning
+      const spinsCount = 6 + Math.floor(Math.random() * 3); // 6 to 8 full spins
+      const segmentAngle = 360 / 8;
+      
+      // Rotation calculations (SVG starts at 0, 12 o'clock pointer)
+      const targetDegrees = (spinsCount * 360) + (360 - (selectedIndex * segmentAngle) - segmentAngle / 2);
+      
+      // Apply animation rotation
+      setRotation(targetDegrees);
+
+      // Store locally as a caching layer
+      localStorage.setItem("honeygain_last_spin", Date.now().toString());
+      setCooldownSeconds(24 * 60 * 60); // 24 hours
+
+      // Tick audio sound waves or click visual indicator
+      let ticksPlayed = 0;
+      const ticksCount = 40;
+      const tickInterval = setInterval(() => {
+        ticksPlayed++;
+        if (ticksPlayed >= ticksCount) {
+          clearInterval(tickInterval);
+        }
+      }, 120);
+
+      // Complete spin action
+      setTimeout(() => {
+        setIsSpinning(false);
+        setShowResultModal(true);
+      }, 5500); // Wait for transition duration (5s) + minor delay
+
+    } catch (err) {
+      console.error("Error during spin:", err);
+      setErrorMessage(lang === "ru" ? "Ошибка подключения. Попробуйте позже." : "Connection error. Please try again later.");
       setIsSpinning(false);
-      setShowResultModal(true);
-    }, 5500); // Wait for transition duration (5s) + minor delay
+    }
   };
 
   // Reset wheel state to allow spin again
@@ -404,6 +530,17 @@ export function LuckyWheel({ lang, theme, referralLink, t }: LuckyWheelProps) {
                 </div>
               </button>
             </div>
+            
+            {/* Real-time server-side block warning / error messages */}
+            {errorMessage && (
+              <div className="mt-4 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium text-center max-w-[320px] shadow-lg shadow-red-500/5" style={{ fontFamily: "Georgia" }}>
+                <i className="fa-solid fa-triangle-exclamation mr-1.5 text-red-500"></i>
+                {errorMessage === "Cooldown active" 
+                  ? (lang === "ru" ? "Вы уже участвовали! 1 спин в 24 часа для одного устройства/IP." : "You have already participated! 1 spin per 24h per device/IP.")
+                  : errorMessage
+                }
+              </div>
+            )}
           </div>
 
           {/* Right Column: Game Info & Statistics (5 cols) */}
@@ -456,7 +593,43 @@ export function LuckyWheel({ lang, theme, referralLink, t }: LuckyWheelProps) {
                   </div>
                 )}
 
-
+                {/* Auth-specific feedback directly on the wheel card */}
+                {user ? (
+                  <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wider mb-1 text-amber-500" style={{ fontFamily: "Georgia" }}>
+                        {lang === "ru" ? "Партнерский профиль:" : "Partner Account:"}
+                      </div>
+                      <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        {user.username}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]" style={{ fontFamily: "Georgia" }}>
+                        {lang === "ru" ? "Баланс:" : "Balance:"}
+                      </div>
+                      <div className="text-base font-bold text-honey font-mono">
+                        ${user.balance.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10 flex flex-col gap-2.5">
+                    <div className="text-xs font-light text-[var(--text-muted)] leading-relaxed" style={{ fontFamily: "Georgia" }}>
+                      {lang === "ru" 
+                        ? "Вы крутите рулетку в гостевом режиме. Зарегистрируйте аккаунт партнера, чтобы сохранить выигрыш и получить приветственные $3.00!" 
+                        : "You are spinning in guest mode. Create an account to save your winnings and instantly activate your $3.00 gift!"}
+                    </div>
+                    <button
+                      onClick={onOpenAuth}
+                      className="w-full py-2 px-4 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 transition-colors cursor-pointer text-center"
+                      style={{ fontFamily: "Georgia" }}
+                    >
+                      {lang === "ru" ? "Вход / Регистрация 🍯" : "Login / Register 🍯"}
+                    </button>
+                  </div>
+                )}
 
               </div>
             </div>
