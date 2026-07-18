@@ -6,8 +6,46 @@ import { NotificationToast } from './components/NotificationToast';
 import { AIConsultant } from './components/AIConsultant';
 import { LuckyWheel } from './components/LuckyWheel';
 import { AuthModal } from './components/AuthModal';
+import { GuidePage } from './components/GuidePage';
 
 export default function App() {
+  // Текущая активная страница (home или guide)
+  const [currentPage, setCurrentPage] = useState<'home' | 'guide'>(() => {
+    const path = window.location.pathname;
+    return (path === '/baza-znanij' || path === '/baza-znanij/') ? 'guide' : 'home';
+  });
+
+  // Синхронизация при переходах "назад" / "вперед" в браузере
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/baza-znanij' || path === '/baza-znanij/') {
+        setCurrentPage('guide');
+      } else {
+        setCurrentPage('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Обновление пути URL в браузере при изменении состояния страницы
+  useEffect(() => {
+    const path = window.location.pathname;
+    const isCurrentlyGuide = path === '/baza-znanij' || path === '/baza-znanij/';
+
+    if (currentPage === 'guide') {
+      if (!isCurrentlyGuide) {
+        history.pushState({ page: 'guide' }, '', '/baza-znanij' + window.location.search);
+      }
+    } else {
+      if (isCurrentlyGuide) {
+        history.pushState({ page: 'home' }, '', '/' + window.location.search);
+      }
+    }
+  }, [currentPage]);
+
   // Инициализация темы и языка из localStorage или значений по умолчанию
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
@@ -222,24 +260,43 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           
           {/* Логотип */}
-          <a href="#" className="flex items-center space-x-2.5 group" style={{ fontFamily: 'Georgia' }}>
+          <button 
+            onClick={() => setCurrentPage('home')} 
+            className="flex items-center space-x-2.5 group text-left cursor-pointer" 
+            style={{ fontFamily: 'Georgia' }}
+          >
             <div className="w-8 h-8 rounded-lg honey-gradient flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/10 group-hover:scale-105 transition-transform">
               <span>H</span>
             </div>
             <span className="text-xl sm:text-2xl tracking-tight font-semibold" style={{ color: 'var(--text-main)' }}>
               HoneyGain<span className="text-honey">.store</span>
             </span>
-          </a>
+          </button>
 
           {/* Навигационные ссылки */}
           <div className="hidden md:flex items-center space-x-8 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
-            <a href="#how" className="hover:text-[var(--text-main)] transition-colors" style={{ fontFamily: 'Georgia' }}>{t.btnHow}</a>
-            <a href="#wheel" className="hover:text-[var(--text-main)] transition-colors text-honey font-bold" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Рулетка 🎡' : 'Roulette 🎡'}</a>
-            <a href="#advantages" className="hover:text-[var(--text-main)] transition-colors" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Преимущества' : 'Benefits'}</a>
-            <a href="#cta" className="hover:text-[var(--text-main)] transition-colors text-honey font-bold" style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Бонус $3' : 'Bonus $3'}</a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentPage('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`hover:text-[var(--text-main)] transition-colors cursor-pointer ${currentPage === 'home' ? 'text-honey font-bold' : ''}`} 
+              style={{ fontFamily: 'Georgia' }}
+            >
+              {lang === 'ru' ? 'Главная' : 'Home'}
+            </a>
+            <button 
+              onClick={() => setCurrentPage(currentPage === 'home' ? 'guide' : 'home')}
+              className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'guide' ? 'text-honey font-bold' : ''}`}
+              style={{ fontFamily: 'Georgia' }}
+            >
+              {lang === 'ru' ? 'База знаний' : 'Guide'}
+            </button>
           </div>
 
-          {/* Кнопки управления (Тема, Язык, Авторизация, CTA) */}
+          {/* Кнопки управления (Тема, Язык, Руководство, Авторизация, CTA) */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             
             {/* Кнопка смены темы */}
@@ -258,6 +315,18 @@ export default function App() {
             >
               <i className="fa-solid fa-globe text-[#f6b026]"></i>
               <span style={{ fontFamily: 'Georgia' }}>{lang.toUpperCase()}</span>
+            </button>
+
+            {/* Кнопка "База знаний" (Руководство) для мобильных */}
+            <button 
+              onClick={() => setCurrentPage(currentPage === 'home' ? 'guide' : 'home')}
+              className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'guide' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
+              title={lang === 'ru' ? 'Руководство по заработку' : 'Earnings Guide'}
+            >
+              <i className="fa-solid fa-book text-[#f6b026]"></i>
+              <span className="hidden sm:inline" style={{ fontFamily: 'Georgia' }}>
+                {lang === 'ru' ? 'База знаний' : 'Guide'}
+              </span>
             </button>
 
             {/* ПРОФИЛЬ ИЛИ ВХОД */}
@@ -349,8 +418,10 @@ export default function App() {
         </div>
       </header>
 
-      {/* ГЕРОЙ-БЛОК (HERO SECTION) */}
-      <section className="relative pt-12 pb-20 sm:pt-20 sm:pb-32 overflow-hidden">
+      {currentPage === 'home' ? (
+        <>
+          {/* ГЕРОЙ-БЛОК (HERO SECTION) */}
+          <section className="relative pt-12 pb-20 sm:pt-20 sm:pb-32 overflow-hidden">
         {/* Декоративные фоновые элементы */}
         <div className="absolute top-1/4 left-1/10 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-amber-500/5 blur-3xl -z-10 animate-float"></div>
         <div className="absolute bottom-1/4 right-1/10 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-orange-500/5 blur-3xl -z-10 animate-float" style={{ animationDelay: '2s' }}></div>
@@ -933,6 +1004,24 @@ export default function App() {
           </div>
         </div>
       </section>
+        </>
+      ) : (
+        <GuidePage
+          lang={lang}
+          theme={theme}
+          referralLink={referralLink}
+          onSpinClick={() => {
+            setCurrentPage('home');
+            setTimeout(() => {
+              const element = document.getElementById('wheel');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 300);
+          }}
+          onBack={() => setCurrentPage('home')}
+        />
+      )}
 
       {/* ПОДВАЛ (FOOTER) */}
       <motion.footer 
