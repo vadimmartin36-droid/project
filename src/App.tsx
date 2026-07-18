@@ -56,6 +56,28 @@ export default function App() {
     }
   }, [currentPage]);
 
+  // Скролл наверх при смене активной страницы
+  useEffect(() => {
+    const scrollToTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    scrollToTop();
+    
+    // Повторяем несколько раз на следующих кадрах для уверенности в условиях монтирования компонентов и анимаций
+    const h1 = requestAnimationFrame(scrollToTop);
+    const t1 = setTimeout(scrollToTop, 50);
+    const t2 = setTimeout(scrollToTop, 150);
+
+    return () => {
+      cancelAnimationFrame(h1);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [currentPage]);
+
   // Инициализация темы и языка из localStorage или значений по умолчанию
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
@@ -271,7 +293,10 @@ export default function App() {
           
           {/* Логотип */}
           <button 
-            onClick={() => setCurrentPage('home')} 
+            onClick={() => {
+              setCurrentPage('home');
+              window.scrollTo(0, 0);
+            }} 
             className="flex items-center space-x-2.5 group text-left cursor-pointer" 
             style={{ fontFamily: 'Georgia' }}
           >
@@ -290,7 +315,7 @@ export default function App() {
               onClick={(e) => {
                 e.preventDefault();
                 setCurrentPage('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo(0, 0);
               }}
               className={`hover:text-[var(--text-main)] transition-colors cursor-pointer ${currentPage === 'home' ? 'text-honey font-bold' : ''}`} 
               style={{ fontFamily: 'Georgia' }}
@@ -298,14 +323,20 @@ export default function App() {
               {lang === 'ru' ? 'Главная' : 'Home'}
             </a>
             <button 
-              onClick={() => setCurrentPage('guide')}
+              onClick={() => {
+                setCurrentPage('guide');
+                window.scrollTo(0, 0);
+              }}
               className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'guide' ? 'text-honey font-bold' : ''}`}
               style={{ fontFamily: 'Georgia' }}
             >
               {lang === 'ru' ? 'База знаний' : 'Guide'}
             </button>
             <button 
-              onClick={() => setCurrentPage('about')}
+              onClick={() => {
+                setCurrentPage('about');
+                window.scrollTo(0, 0);
+              }}
               className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'about' ? 'text-honey font-bold' : ''}`}
               style={{ fontFamily: 'Georgia' }}
             >
@@ -336,7 +367,10 @@ export default function App() {
 
             {/* Кнопка "База знаний" (Руководство) для мобильных */}
             <button 
-              onClick={() => setCurrentPage(currentPage === 'guide' ? 'home' : 'guide')}
+              onClick={() => {
+                setCurrentPage(currentPage === 'guide' ? 'home' : 'guide');
+                window.scrollTo(0, 0);
+              }}
               className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'guide' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
               title={lang === 'ru' ? 'Руководство по заработку' : 'Earnings Guide'}
             >
@@ -348,7 +382,10 @@ export default function App() {
 
             {/* Кнопка "О проекте" для мобильных */}
             <button 
-              onClick={() => setCurrentPage(currentPage === 'about' ? 'home' : 'about')}
+              onClick={() => {
+                setCurrentPage(currentPage === 'about' ? 'home' : 'about');
+                window.scrollTo(0, 0);
+              }}
               className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'about' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
               title={lang === 'ru' ? 'О проекте' : 'About Project'}
             >
@@ -1053,7 +1090,7 @@ export default function App() {
               href={referralLink} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="inline-flex px-4 py-2.5 sm:px-12 sm:py-5 rounded-xl honey-gradient text-slate-950 text-xs sm:text-xl font-bold space-x-3 items-center justify-center shadow-xl shadow-amber-500/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer animate-pulse-glow"
+              className="inline-flex px-5 py-3 sm:px-8 sm:py-3.5 rounded-xl honey-gradient text-slate-950 text-xs sm:text-base font-bold space-x-3 items-center justify-center shadow-xl shadow-amber-500/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer animate-pulse-glow"
             >
               <i className="fa-solid fa-user-plus"></i>
               <span style={{ fontFamily: 'Georgia' }}>{t.ctaBtn}</span>
