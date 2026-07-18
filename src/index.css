@@ -246,3 +246,24 @@ body {
     opacity: 0.85;
   }
 }
+
+/* Infinite modern marquee */
+@keyframes marquee-infinite {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-infinite 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+

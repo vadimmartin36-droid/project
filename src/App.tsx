@@ -7,12 +7,15 @@ import { AIConsultant } from './components/AIConsultant';
 import { LuckyWheel } from './components/LuckyWheel';
 import { AuthModal } from './components/AuthModal';
 import { GuidePage } from './components/GuidePage';
+import { AboutPage } from './components/AboutPage';
 
 export default function App() {
-  // Текущая активная страница (home или guide)
-  const [currentPage, setCurrentPage] = useState<'home' | 'guide'>(() => {
+  // Текущая активная страница (home, guide или about)
+  const [currentPage, setCurrentPage] = useState<'home' | 'guide' | 'about'>(() => {
     const path = window.location.pathname;
-    return (path === '/baza-znanij' || path === '/baza-znanij/') ? 'guide' : 'home';
+    if (path === '/baza-znanij' || path === '/baza-znanij/') return 'guide';
+    if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/') return 'about';
+    return 'home';
   });
 
   // Синхронизация при переходах "назад" / "вперед" в браузере
@@ -21,6 +24,8 @@ export default function App() {
       const path = window.location.pathname;
       if (path === '/baza-znanij' || path === '/baza-znanij/') {
         setCurrentPage('guide');
+      } else if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/') {
+        setCurrentPage('about');
       } else {
         setCurrentPage('home');
       }
@@ -34,13 +39,18 @@ export default function App() {
   useEffect(() => {
     const path = window.location.pathname;
     const isCurrentlyGuide = path === '/baza-znanij' || path === '/baza-znanij/';
+    const isCurrentlyAbout = path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/';
 
     if (currentPage === 'guide') {
       if (!isCurrentlyGuide) {
         history.pushState({ page: 'guide' }, '', '/baza-znanij' + window.location.search);
       }
+    } else if (currentPage === 'about') {
+      if (!isCurrentlyAbout) {
+        history.pushState({ page: 'about' }, '', '/o-proekte' + window.location.search);
+      }
     } else {
-      if (isCurrentlyGuide) {
+      if (isCurrentlyGuide || isCurrentlyAbout) {
         history.pushState({ page: 'home' }, '', '/' + window.location.search);
       }
     }
@@ -288,11 +298,18 @@ export default function App() {
               {lang === 'ru' ? 'Главная' : 'Home'}
             </a>
             <button 
-              onClick={() => setCurrentPage(currentPage === 'home' ? 'guide' : 'home')}
+              onClick={() => setCurrentPage('guide')}
               className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'guide' ? 'text-honey font-bold' : ''}`}
               style={{ fontFamily: 'Georgia' }}
             >
               {lang === 'ru' ? 'База знаний' : 'Guide'}
+            </button>
+            <button 
+              onClick={() => setCurrentPage('about')}
+              className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'about' ? 'text-honey font-bold' : ''}`}
+              style={{ fontFamily: 'Georgia' }}
+            >
+              {lang === 'ru' ? 'О проекте' : 'About'}
             </button>
           </div>
 
@@ -319,13 +336,25 @@ export default function App() {
 
             {/* Кнопка "База знаний" (Руководство) для мобильных */}
             <button 
-              onClick={() => setCurrentPage(currentPage === 'home' ? 'guide' : 'home')}
+              onClick={() => setCurrentPage(currentPage === 'guide' ? 'home' : 'guide')}
               className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'guide' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
               title={lang === 'ru' ? 'Руководство по заработку' : 'Earnings Guide'}
             >
               <i className="fa-solid fa-book text-[#f6b026]"></i>
               <span className="hidden sm:inline" style={{ fontFamily: 'Georgia' }}>
                 {lang === 'ru' ? 'База знаний' : 'Guide'}
+              </span>
+            </button>
+
+            {/* Кнопка "О проекте" для мобильных */}
+            <button 
+              onClick={() => setCurrentPage(currentPage === 'about' ? 'home' : 'about')}
+              className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'about' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
+              title={lang === 'ru' ? 'О проекте' : 'About Project'}
+            >
+              <i className="fa-solid fa-circle-info text-[#f6b026]"></i>
+              <span className="hidden sm:inline" style={{ fontFamily: 'Georgia' }}>
+                {lang === 'ru' ? 'О проекте' : 'About'}
               </span>
             </button>
 
@@ -417,6 +446,42 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* ТЕХНИЧЕСКИЕ РАБОТЫ (MAINTENANCE RUNNING TEXT) */}
+      <div className="w-full overflow-hidden border-b py-2 sm:py-2.5 flex items-center select-none" style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--card-border)' }}>
+        <div className="flex items-center space-x-2 px-3 sm:px-4 z-10 font-bold text-[#f6b026] text-xs sm:text-sm shrink-0 border-r" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--header-bg)' }}>
+          <i className="fa-solid fa-triangle-exclamation text-[#f6b026] animate-pulse"></i>
+          <span style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Внимание:' : 'Notice:'}</span>
+        </div>
+        <div className="relative flex-1 overflow-hidden">
+          <div className="animate-marquee whitespace-nowrap flex items-center py-0.5 text-xs sm:text-sm font-medium" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+            <span className="inline-flex items-center mx-4">
+              {lang === 'ru' 
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+            </span>
+            <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
+            <span className="inline-flex items-center mx-4">
+              {lang === 'ru' 
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+            </span>
+            <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
+            <span className="inline-flex items-center mx-4">
+              {lang === 'ru' 
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+            </span>
+            <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
+            <span className="inline-flex items-center mx-4">
+              {lang === 'ru' 
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+            </span>
+            <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
+          </div>
+        </div>
+      </div>
 
       {currentPage === 'home' ? (
         <>
@@ -655,14 +720,6 @@ export default function App() {
         }}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
-
-      <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
-        lang={lang} 
-        onLoginSuccess={(userData) => setUser(userData)} 
-      />
-
       {/* ВИДЕО-БЛОК (VIDEO SECTION) */}
       <section className="pb-24 sm:pb-32 px-4 pt-[60px]">
         <div className="max-w-4xl mx-auto">
@@ -1005,7 +1062,7 @@ export default function App() {
         </div>
       </section>
         </>
-      ) : (
+      ) : currentPage === 'guide' ? (
         <GuidePage
           lang={lang}
           theme={theme}
@@ -1020,6 +1077,14 @@ export default function App() {
             }, 300);
           }}
           onBack={() => setCurrentPage('home')}
+        />
+      ) : (
+        <AboutPage
+          lang={lang}
+          theme={theme}
+          referralLink={referralLink}
+          onBack={() => setCurrentPage('home')}
+          onGuideClick={() => setCurrentPage('guide')}
         />
       )}
 
@@ -1433,6 +1498,14 @@ export default function App() {
 
       {/* Дружелюбный AI-консультант */}
       <AIConsultant lang={lang} />
+
+      {/* ГЛОБАЛЬНОЕ ОКНО АВТОРИЗАЦИИ */}
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        lang={lang} 
+        onLoginSuccess={(userData) => setUser(userData)} 
+      />
 
     </div>
   );
