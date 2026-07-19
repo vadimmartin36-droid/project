@@ -14,8 +14,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'guide' | 'about'>(() => {
     const path = window.location.pathname;
     const hash = window.location.hash;
-    if (path === '/baza-znanij' || path === '/baza-znanij/' || hash === '#/baza-znanij' || hash === '#/baza-znanij/') return 'guide';
-    if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/' || hash === '#/o-proekte' || hash === '#/o-proekte/' || hash === '#/about' || hash === '#/about/') return 'about';
+    if (path.includes('/baza-znanij') || hash.includes('/baza-znanij')) return 'guide';
+    if (path.includes('/o-proekte') || path.includes('/about') || hash.includes('/o-proekte') || hash.includes('/about')) return 'about';
     return 'home';
   });
 
@@ -24,9 +24,9 @@ export default function App() {
     const handlePopState = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
-      if (path === '/baza-znanij' || path === '/baza-znanij/' || hash === '#/baza-znanij' || hash === '#/baza-znanij/') {
+      if (path.includes('/baza-znanij') || hash.includes('/baza-znanij')) {
         setCurrentPage('guide');
-      } else if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/' || hash === '#/o-proekte' || hash === '#/o-proekte/' || hash === '#/about' || hash === '#/about/') {
+      } else if (path.includes('/o-proekte') || path.includes('/about') || hash.includes('/o-proekte') || hash.includes('/about')) {
         setCurrentPage('about');
       } else {
         setCurrentPage('home');
@@ -44,8 +44,8 @@ export default function App() {
   // Обновление пути URL в браузере при изменении состояния страницы
   useEffect(() => {
     const path = window.location.pathname;
-    const isCurrentlyGuide = path === '/baza-znanij' || path === '/baza-znanij/';
-    const isCurrentlyAbout = path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/';
+    const isCurrentlyGuide = path.includes('/baza-znanij');
+    const isCurrentlyAbout = path.includes('/o-proekte') || path.includes('/about');
 
     if (currentPage === 'guide') {
       if (!isCurrentlyGuide) {
