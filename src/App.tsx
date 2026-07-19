@@ -13,8 +13,9 @@ export default function App() {
   // Текущая активная страница (home, guide или about)
   const [currentPage, setCurrentPage] = useState<'home' | 'guide' | 'about'>(() => {
     const path = window.location.pathname;
-    if (path === '/baza-znanij' || path === '/baza-znanij/') return 'guide';
-    if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/') return 'about';
+    const hash = window.location.hash;
+    if (path === '/baza-znanij' || path === '/baza-znanij/' || hash === '#/baza-znanij' || hash === '#/baza-znanij/') return 'guide';
+    if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/' || hash === '#/o-proekte' || hash === '#/o-proekte/' || hash === '#/about' || hash === '#/about/') return 'about';
     return 'home';
   });
 
@@ -22,9 +23,10 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
-      if (path === '/baza-znanij' || path === '/baza-znanij/') {
+      const hash = window.location.hash;
+      if (path === '/baza-znanij' || path === '/baza-znanij/' || hash === '#/baza-znanij' || hash === '#/baza-znanij/') {
         setCurrentPage('guide');
-      } else if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/') {
+      } else if (path === '/o-proekte' || path === '/o-proekte/' || path === '/about' || path === '/about/' || hash === '#/o-proekte' || hash === '#/o-proekte/' || hash === '#/about' || hash === '#/about/') {
         setCurrentPage('about');
       } else {
         setCurrentPage('home');
@@ -32,7 +34,11 @@ export default function App() {
     };
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
   }, []);
 
   // Обновление пути URL в браузере при изменении состояния страницы
@@ -1082,7 +1088,7 @@ export default function App() {
             </div>
 
             <h2 className="font-semibold tracking-tight mb-6 serif-title italic" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.ctaTitle}</h2>
-            <p className="text-base sm:text-xl max-w-xl mx-auto leading-relaxed font-light text-center" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '28px', height: '90px', width: '737.4px', marginLeft: 'auto', marginRight: 'auto', marginTop: '0px', marginBottom: '40px', paddingBottom: '0px', paddingTop: '15px', paddingLeft: '0px', paddingRight: '0px', borderRadius: '0px', borderWidth: '0px', maxWidth: '100%', fontFamily: 'Georgia' }}>
+            <p className="text-base sm:text-xl max-w-xl mx-auto leading-relaxed font-light text-center" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '28px', height: '90px', width: '737.4px', marginLeft: 'auto', marginRight: '0px', marginTop: '0px', marginBottom: '40px', paddingBottom: '0px', paddingTop: '0px', paddingLeft: '0px', paddingRight: '0px', borderRadius: '0px', borderWidth: '0px', maxWidth: '100%', fontFamily: 'Georgia' }}>
               {t.ctaSubtitle}
             </p>
 
