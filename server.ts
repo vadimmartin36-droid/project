@@ -485,6 +485,26 @@ async function startServer() {
     }
   });
 
+  // Explicit routes for SPA pages to ensure they are matched and served correctly on the server
+  const spaPages = [
+    '/o-proekte', 
+    '/o-proekte/', 
+    '/baza-znanij', 
+    '/baza-znanij/', 
+    '/about', 
+    '/about/'
+  ];
+
+  app.get(spaPages, async (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") {
+      // In development, let Vite middleware handle it (passed via next)
+      return next();
+    } else {
+      const distPath = path.join(process.cwd(), 'dist');
+      return res.sendFile(path.join(distPath, 'index.html'));
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
