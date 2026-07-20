@@ -232,6 +232,22 @@ export async function updateUserBalance(userId: string, balance: number): Promis
   }
 }
 
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+  if (isD1Configured) {
+    try {
+      await queryD1("UPDATE users SET passwordHash = ? WHERE id = ?;", [passwordHash, userId]);
+      return;
+    } catch (e) {
+      console.error("D1 updateUserPassword failed, updating local", e);
+    }
+  }
+  const u = localUsers.find(usr => usr.id === userId);
+  if (u) {
+    u.passwordHash = passwordHash;
+    saveLocalUsers();
+  }
+}
+
 // Spin methods
 export async function getSpins(): Promise<SpinRecord[]> {
   if (isD1Configured) {

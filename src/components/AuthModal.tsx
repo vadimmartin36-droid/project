@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, Lock, LogIn, UserPlus, X, Coins, ShieldCheck, HelpCircle, Gift, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, LogIn, UserPlus, X, Coins, ShieldCheck, HelpCircle, Gift, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,6 +20,12 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +40,36 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
     setRegUsername('');
     setRegEmail('');
     setRegPassword('');
+    setShowLoginPassword(false);
+    setShowRegPassword(false);
+    setForgotMode(false);
+    setForgotEmail('');
     setError(null);
     setSuccess(null);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || (lang === 'ru' ? 'Ошибка восстановления пароля' : 'Password recovery failed'));
+      }
+      setSuccess(data.message);
+      setForgotEmail('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -145,43 +179,51 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
                 <span className="text-lg">H</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold tracking-tight serif-title italic" style={{ color: 'var(--text-main)' }}>
-                {lang === 'ru' ? 'Добро пожаловать' : 'Welcome to HoneyGain'}
+                {forgotMode 
+                  ? (lang === 'ru' ? 'Восстановление пароля' : 'Password Recovery')
+                  : (lang === 'ru' ? 'Добро пожаловать' : 'Welcome to HoneyGain')
+                }
               </h3>
               <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
-                {tab === 'login' 
-                  ? (lang === 'ru' ? 'Войдите в личный кабинет партнера' : 'Access your affiliate personal panel')
-                  : (lang === 'ru' ? 'Создайте профиль и заберите приветственные $3.00' : 'Create a profile & claim guaranteed $3.00')
+                {forgotMode 
+                  ? (lang === 'ru' ? 'Введите e-mail для сброса пароля' : 'Enter your e-mail to reset your password')
+                  : (tab === 'login' 
+                      ? (lang === 'ru' ? 'Войдите в личный кабинет партнера' : 'Access your affiliate personal panel')
+                      : (lang === 'ru' ? 'Создайте профиль и заберите приветственные $3.00' : 'Create a profile & claim guaranteed $3.00')
+                    )
                 }
               </p>
             </div>
 
             {/* Tabs switcher */}
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] mb-6">
-              <button
-                onClick={() => { setTab('login'); setError(null); }}
-                className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  tab === 'login' 
-                    ? 'bg-[#f6b026] text-slate-950 shadow-md shadow-amber-500/10' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                style={{ fontFamily: 'Georgia' }}
-              >
-                <LogIn size={13} />
-                {lang === 'ru' ? 'Вход' : 'Login'}
-              </button>
-              <button
-                onClick={() => { setTab('register'); setError(null); }}
-                className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  tab === 'register' 
-                    ? 'bg-[#f6b026] text-slate-950 shadow-md shadow-amber-500/10' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                style={{ fontFamily: 'Georgia' }}
-              >
-                <UserPlus size={13} />
-                {lang === 'ru' ? 'Регистрация' : 'Register'}
-              </button>
-            </div>
+            {!forgotMode && (
+              <div className="grid grid-cols-2 p-1 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] mb-6">
+                <button
+                  onClick={() => { setTab('login'); setError(null); }}
+                  className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    tab === 'login' 
+                      ? 'bg-[#f6b026] text-slate-950 shadow-md shadow-amber-500/10' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <LogIn size={13} />
+                  {lang === 'ru' ? 'Вход' : 'Login'}
+                </button>
+                <button
+                  onClick={() => { setTab('register'); setError(null); }}
+                  className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    tab === 'register' 
+                      ? 'bg-[#f6b026] text-slate-950 shadow-md shadow-amber-500/10' 
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <UserPlus size={13} />
+                  {lang === 'ru' ? 'Регистрация' : 'Register'}
+                </button>
+              </div>
+            )}
 
             {/* Status alerts */}
             <AnimatePresence mode="wait">
@@ -212,65 +254,135 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
               )}
             </AnimatePresence>
 
-            {/* LOGIN FORM */}
+             {/* LOGIN FORM */}
             {tab === 'login' ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
-                    {lang === 'ru' ? 'Имя пользователя или Email' : 'Username or Email'}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--text-muted)]">
-                      <User size={16} />
+              forgotMode ? (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                      {lang === 'ru' ? 'Ваш e-mail адрес' : 'Your Email Address'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--text-muted)]">
+                        <Mail size={16} />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="example@mail.com"
+                        className="block w-full pl-10 pr-4 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
+                        style={{ color: 'var(--text-main)' }}
+                      />
                     </div>
-                    <input
-                      type="text"
-                      required
-                      value={loginIdentifier}
-                      onChange={(e) => setLoginIdentifier(e.target.value)}
-                      placeholder={lang === 'ru' ? 'Например: vadim@mail.ru' : 'e.g. alex_honey'}
-                      className="block w-full pl-10 pr-4 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
-                      style={{ color: 'var(--text-main)' }}
-                    />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
-                    {lang === 'ru' ? 'Пароль' : 'Password'}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--text-muted)]">
-                      <Lock size={16} />
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-2 py-3 rounded-xl honey-gradient text-slate-950 font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                    style={{ fontFamily: 'Georgia' }}
+                  >
+                    {loading ? (
+                      <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <HelpCircle size={15} />
+                        <span>{lang === 'ru' ? 'Сбросить пароль' : 'Reset Password'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode(false); setError(null); setSuccess(null); }}
+                      className="text-xs font-semibold text-[#f6b026] hover:underline cursor-pointer"
+                      style={{ fontFamily: 'Georgia' }}
+                    >
+                      {lang === 'ru' ? 'Вернуться к входу' : 'Back to Login'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                      {lang === 'ru' ? 'Имя пользователя или Email' : 'Username or Email'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--text-muted)]">
+                        <User size={16} />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={loginIdentifier}
+                        onChange={(e) => setLoginIdentifier(e.target.value)}
+                        placeholder={lang === 'ru' ? 'Например: example@mail.com' : 'e.g. alex_honey'}
+                        className="block w-full pl-10 pr-4 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
+                        style={{ color: 'var(--text-main)' }}
+                      />
                     </div>
-                    <input
-                      type="password"
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="block w-full pl-10 pr-4 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
-                      style={{ color: 'var(--text-main)' }}
-                    />
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-3 rounded-xl honey-gradient text-slate-950 font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-                  style={{ fontFamily: 'Georgia' }}
-                >
-                  {loading ? (
-                    <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <LogIn size={15} />
-                      <span>{lang === 'ru' ? 'Войти' : 'Sign In'}</span>
-                    </>
-                  )}
-                </button>
-              </form>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                      {lang === 'ru' ? 'Пароль' : 'Password'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--text-muted)]">
+                        <Lock size={16} />
+                      </div>
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        required
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="block w-full pl-10 pr-10 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
+                        style={{ color: 'var(--text-main)' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[#f6b026] transition-colors cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {/* Forgot password link */}
+                    <div className="flex justify-end mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { setForgotMode(true); setError(null); setSuccess(null); }}
+                        className="text-xs text-[var(--text-muted)] hover:text-[#f6b026] transition-colors cursor-pointer hover:underline"
+                        style={{ fontFamily: 'Georgia' }}
+                      >
+                        {lang === 'ru' ? 'Забыли пароль?' : 'Forgot password?'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-2 py-3 rounded-xl honey-gradient text-slate-950 font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                    style={{ fontFamily: 'Georgia' }}
+                  >
+                    {loading ? (
+                      <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <LogIn size={15} />
+                        <span>{lang === 'ru' ? 'Войти' : 'Sign In'}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )
             ) : (
               /* REGISTER FORM */
               <form onSubmit={handleRegister} className="space-y-4">
@@ -323,14 +435,22 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
                       <Lock size={16} />
                     </div>
                     <input
-                      type="password"
+                      type={showRegPassword ? "text" : "password"}
                       required
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-10 pr-4 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
+                      className="block w-full pl-10 pr-10 py-3 rounded-xl bg-black/10 dark:bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-[#f6b026] text-sm font-medium transition-colors"
                       style={{ color: 'var(--text-main)' }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[#f6b026] transition-colors cursor-pointer"
+                      tabIndex={-1}
+                    >
+                      {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
 

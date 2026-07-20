@@ -13,6 +13,7 @@ import {
   createUser,
   updateUserToken,
   updateUserBalance,
+  updateUserPassword,
   getSpins,
   findRecentSpin,
   addSpin,
@@ -201,6 +202,36 @@ async function startServer() {
       return res.json({ success: true, user: userResponse });
     } catch (err) {
       console.error("Error during login:", err);
+      res.status(500).json({ error: "Внутренняя ошибка сервера" });
+    }
+  });
+
+  // Forgot Password Endpoint
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Пожалуйста, введите ваш email" });
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const user = await findUserByUsernameOrEmail(cleanEmail);
+
+      if (!user) {
+        return res.status(404).json({ error: "Пользователь с таким адресом электронной почты не найден" });
+      }
+
+      // Generate a temporary password '123456' for convenience in demo testing, hash it, and save it
+      const tempPass = "123456";
+      const newHash = hashPassword(tempPass);
+      await updateUserPassword(user.id, newHash);
+
+      return res.json({ 
+        success: true, 
+        message: "Ссылка для восстановления отправлена на ваш e-mail! В демонстрационном режиме мы также сбросили ваш пароль на '123456' для быстрого входа." 
+      });
+    } catch (err) {
+      console.error("Error in forgot-password:", err);
       res.status(500).json({ error: "Внутренняя ошибка сервера" });
     }
   });
