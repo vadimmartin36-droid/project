@@ -216,6 +216,7 @@ export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('honeygain_auth_token');
@@ -351,54 +352,24 @@ export default function App() {
           </div>
 
           {/* Кнопки управления (Тема, Язык, Руководство, Авторизация, CTA) */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             
-            {/* Кнопка смены темы */}
+            {/* Кнопка смены темы - скрыта на мобильных, так как есть в меню */}
             <button 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-9 h-9 rounded-full glass-card flex items-center justify-center cursor-pointer text-base hover:scale-110 active:scale-95 transition-all"
+              className="hidden md:flex w-9 h-9 rounded-full glass-card items-center justify-center cursor-pointer text-base hover:scale-110 active:scale-95 transition-all"
               title="Сменить тему"
             >
               <i className={theme === 'dark' ? "fa-solid fa-sun text-[#f6b026]" : "fa-solid fa-moon text-slate-800"}></i>
             </button>
 
-            {/* Кнопка переключения языка */}
+            {/* Кнопка переключения языка - скрыта на мобильных, так как есть в меню */}
             <button 
               onClick={() => setLang(lang === 'ru' ? 'en' : 'ru')}
-              className="h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 transition-all"
+              className="hidden md:flex h-9 px-2.5 sm:px-3 rounded-full glass-card items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 transition-all"
             >
               <i className="fa-solid fa-globe text-[#f6b026]"></i>
               <span style={{ fontFamily: 'Georgia' }}>{lang.toUpperCase()}</span>
-            </button>
-
-            {/* Кнопка "База знаний" (Руководство) для мобильных */}
-            <button 
-              onClick={() => {
-                setCurrentPage(currentPage === 'guide' ? 'home' : 'guide');
-                window.scrollTo(0, 0);
-              }}
-              className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'guide' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
-              title={lang === 'ru' ? 'Руководство по заработку' : 'Earnings Guide'}
-            >
-              <i className="fa-solid fa-book text-[#f6b026]"></i>
-              <span className="hidden sm:inline" style={{ fontFamily: 'Georgia' }}>
-                {lang === 'ru' ? 'База знаний' : 'Guide'}
-              </span>
-            </button>
-
-            {/* Кнопка "О проекте" для мобильных */}
-            <button 
-              onClick={() => {
-                setCurrentPage(currentPage === 'about' ? 'home' : 'about');
-                window.scrollTo(0, 0);
-              }}
-              className={`md:hidden h-9 px-2.5 sm:px-3 rounded-full glass-card flex items-center space-x-1 sm:space-x-1.5 text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all ${currentPage === 'about' ? 'border-[#f6b026] text-[#f6b026]' : ''}`}
-              title={lang === 'ru' ? 'О проекте' : 'About Project'}
-            >
-              <i className="fa-solid fa-circle-info text-[#f6b026]"></i>
-              <span className="hidden sm:inline" style={{ fontFamily: 'Georgia' }}>
-                {lang === 'ru' ? 'О проекте' : 'About'}
-              </span>
             </button>
 
             {/* ПРОФИЛЬ ИЛИ ВХОД */}
@@ -477,7 +448,7 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => setIsAuthOpen(true)}
-                className="h-9 px-3 rounded-full glass-card flex items-center space-x-1.5 text-xs font-bold cursor-pointer text-[var(--text-main)] hover:bg-white/5 transition-all"
+                className="hidden sm:flex h-9 px-3 rounded-full glass-card items-center space-x-1.5 text-xs font-bold cursor-pointer text-[var(--text-main)] hover:bg-white/5 transition-all"
                 style={{ fontFamily: 'Georgia' }}
               >
                 <i className="fa-solid fa-user text-[#f6b026]"></i>
@@ -485,10 +456,195 @@ export default function App() {
               </button>
             )}
 
+            {/* Красивая кнопка Мобильного Меню (Hamburger) */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden w-10 h-10 rounded-full glass-card flex items-center justify-center cursor-pointer text-base hover:scale-105 active:scale-95 border border-[#f6b026]/20 shadow shadow-amber-500/5 transition-all"
+              title={lang === 'ru' ? 'Открыть меню' : 'Open menu'}
+            >
+              <i className="fa-solid fa-bars text-[#f6b026] text-base"></i>
+            </button>
 
           </div>
         </div>
       </header>
+
+      {/* МОБИЛЬНОЕ СДВИЖНОЕ МЕНЮ (SLIDING MOBILE DRAWER) */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            {/* Задний полупрозрачный фон с размытием */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 cursor-pointer md:hidden"
+            />
+            {/* Окно меню / Drawer Box */}
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="fixed right-0 top-0 bottom-0 w-[290px] sm:w-[320px] z-50 shadow-2xl flex flex-col p-6 md:hidden border-l"
+              style={{ 
+                backgroundColor: 'var(--header-bg)', 
+                borderColor: 'var(--card-border)',
+                backdropFilter: 'blur(16px)'
+              }}
+            >
+              {/* Шапка меню */}
+              <div className="flex items-center justify-between border-b pb-4 mb-6" style={{ borderColor: 'var(--card-border)' }}>
+                <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-main)', fontFamily: 'Georgia' }}>
+                  HoneyGain<span className="text-honey font-bold">.store</span>
+                </span>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-8 h-8 rounded-full glass-card flex items-center justify-center cursor-pointer text-base text-[var(--text-muted)] hover:text-[#f6b026] active:scale-90 transition-all border border-[var(--card-border)]"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              {/* Навигационные ссылки */}
+              <div className="flex-1 flex flex-col space-y-3.5">
+                <button 
+                  onClick={() => {
+                    setCurrentPage('home');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`w-full py-3 px-4 rounded-xl flex items-center space-x-3 text-sm font-semibold tracking-wide transition-all cursor-pointer text-left border ${currentPage === 'home' ? 'bg-[#f6b026]/10 text-[#f6b026] border-[#f6b026]/30' : 'text-[var(--text-muted)] hover:bg-white/5 border-transparent'}`}
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <i className="fa-solid fa-house w-5 text-center text-[#f6b026]"></i>
+                  <span>{lang === 'ru' ? 'Главная' : 'Home'}</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setCurrentPage('guide');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`w-full py-3 px-4 rounded-xl flex items-center space-x-3 text-sm font-semibold tracking-wide transition-all cursor-pointer text-left border ${currentPage === 'guide' ? 'bg-[#f6b026]/10 text-[#f6b026] border-[#f6b026]/30' : 'text-[var(--text-muted)] hover:bg-white/5 border-transparent'}`}
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <i className="fa-solid fa-book w-5 text-center text-[#f6b026]"></i>
+                  <span>{lang === 'ru' ? 'База знаний' : 'Guide'}</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setCurrentPage('about');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`w-full py-3 px-4 rounded-xl flex items-center space-x-3 text-sm font-semibold tracking-wide transition-all cursor-pointer text-left border ${currentPage === 'about' ? 'bg-[#f6b026]/10 text-[#f6b026] border-[#f6b026]/30' : 'text-[var(--text-muted)] hover:bg-white/5 border-transparent'}`}
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <i className="fa-solid fa-circle-info w-5 text-center text-[#f6b026]"></i>
+                  <span>{lang === 'ru' ? 'О проекте' : 'About'}</span>
+                </button>
+
+                <div className="border-t my-4" style={{ borderColor: 'var(--card-border)' }} />
+
+                {/* Настройки (Тема и Язык) */}
+                <div className="space-y-4 pt-2">
+                  <div className="text-[10px] text-[var(--text-muted)] font-bold tracking-widest uppercase px-2 mb-2" style={{ fontFamily: 'Georgia' }}>
+                    {lang === 'ru' ? 'Настройки сайта' : 'Site Settings'}
+                  </div>
+                  
+                  {/* Смена языка */}
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                      {lang === 'ru' ? 'Язык интерфейса' : 'Interface language'}
+                    </span>
+                    <button 
+                      onClick={() => setLang(lang === 'ru' ? 'en' : 'ru')}
+                      className="h-8 px-3 rounded-lg glass-card flex items-center space-x-1.5 text-xs font-semibold cursor-pointer border border-[var(--card-border)] hover:bg-white/5 transition-all"
+                    >
+                      <i className="fa-solid fa-globe text-[#f6b026]"></i>
+                      <span style={{ fontFamily: 'Georgia' }}>{lang.toUpperCase()}</span>
+                    </button>
+                  </div>
+
+                  {/* Смена темы */}
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                      {lang === 'ru' ? 'Тема оформления' : 'App theme'}
+                    </span>
+                    <button 
+                      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                      className="h-8 px-3 rounded-lg glass-card flex items-center space-x-1.5 text-xs font-semibold cursor-pointer border border-[var(--card-border)] hover:bg-white/5 transition-all"
+                    >
+                      <i className={theme === 'dark' ? "fa-solid fa-sun text-[#f6b026]" : "fa-solid fa-moon text-slate-800"}></i>
+                      <span style={{ fontFamily: 'Georgia' }}>{theme === 'dark' ? (lang === 'ru' ? 'Темная' : 'Dark') : (lang === 'ru' ? 'Светлая' : 'Light')}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Профиль / Вход в самом низу */}
+              <div className="border-t pt-5 mt-auto" style={{ borderColor: 'var(--card-border)' }}>
+                {user ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3 p-3 rounded-xl bg-white/5 border border-[var(--card-border)]">
+                      <div className="w-9 h-9 rounded-full bg-[#f6b026] text-slate-950 flex items-center justify-center font-bold text-sm shadow shadow-amber-500/20">
+                        {user.username.substring(0, 1).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="text-xs font-bold text-white truncate" style={{ fontFamily: 'Georgia' }}>{user.username}</div>
+                        <div className="text-[10px] text-[var(--text-muted)] truncate">{user.email}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-[#f6b026]/5 rounded-xl p-3 border border-[#f6b026]/10 text-xs space-y-2 text-left">
+                      <div className="flex justify-between items-center">
+                        <span style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Ваш баланс:' : 'Your balance:'}</span>
+                        <span className="font-bold text-honey font-mono text-sm">${user.balance.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Статус сети:' : 'Network status:'}</span>
+                        <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Active
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('honeygain_auth_token');
+                        setUser(null);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all text-center flex items-center justify-center gap-2 cursor-pointer border border-red-500/20"
+                      style={{ fontFamily: 'Georgia' }}
+                    >
+                      <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                      <span>{lang === 'ru' ? 'Выйти из аккаунта' : 'Sign Out'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAuthOpen(true);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl honey-gradient text-slate-950 font-bold text-xs tracking-wide uppercase transition-all shadow-lg shadow-amber-500/10 text-center flex items-center justify-center space-x-2 cursor-pointer"
+                    style={{ fontFamily: 'Georgia' }}
+                  >
+                    <i className="fa-solid fa-user"></i>
+                    <span>{lang === 'ru' ? 'Войти в аккаунт' : 'Sign In'}</span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ТЕХНИЧЕСКИЕ РАБОТЫ (MAINTENANCE RUNNING TEXT) */}
       <div className="w-full overflow-hidden border-b py-2 sm:py-2.5 flex items-center select-none" style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--card-border)' }}>
@@ -543,7 +699,7 @@ export default function App() {
           </div>
 
           {/* Главный заголовок */}
-          <h1 className="text-center w-full block font-bold tracking-tight serif-title italic text-balance border-solid border-0" style={{ color: 'var(--text-main)', fontSize: '36px', lineHeight: '36px', height: '40px', marginTop: '0px', marginBottom: '10px', marginLeft: '0px', marginRight: '0px', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '0px' }}>
+          <h1 className="text-center w-full block font-bold tracking-tight serif-title italic text-balance border-solid border-0 text-3xl sm:text-4xl md:text-5xl lg:text-6xl" style={{ color: 'var(--text-main)', marginTop: '0px', marginBottom: '24px', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '0px' }}>
             {t.heroTitle}{' '}
             <span className="text-honey font-bold">
               {t.heroTitleHighlight}
@@ -551,13 +707,13 @@ export default function App() {
           </h1>
 
           {/* Описание */}
-          <div className="text-center text-base sm:text-xl max-w-6xl mx-auto mb-10 leading-relaxed font-light space-y-1" style={{ color: 'var(--text-muted)', paddingTop: '55px' }}>
+          <div className="text-center text-base sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-light space-y-2" style={{ color: 'var(--text-muted)' }}>
             <p style={{ fontSize: '18px', lineHeight: '28px', fontFamily: 'Georgia', fontWeight: 'normal' }}>{t.heroSubtitle}</p>
             <p className="whitespace-normal" style={{ fontSize: '18px', lineHeight: '28px', fontFamily: 'Georgia' }}>{t.heroSubtitleSec}</p>
           </div>
 
           {/* Кнопки действия */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto" style={{ width: '1200px', maxWidth: '100%' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto max-w-md w-full">
             <a 
               href={referralLink} 
               target="_blank" 
@@ -595,10 +751,10 @@ export default function App() {
               <i className="fa-solid fa-trophy"></i>
               <span style={{ fontFamily: 'Georgia' }}>{t.contestBadge}</span>
             </span>
-            <h2 className="font-bold tracking-tight mb-4 serif-title italic border-solid border-0" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>
+            <h2 className="font-bold tracking-tight mb-4 serif-title italic border-solid border-0 text-3xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>
               {t.contestTitle}
             </h2>
-            <p className="text-base sm:text-lg font-light max-w-[800px] mx-auto" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '28px', paddingTop: '25px', fontFamily: 'Georgia' }}>
+            <p className="text-base sm:text-lg font-light max-w-[800px] mx-auto" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
               {t.contestSubtitle}
             </p>
           </div>
@@ -766,9 +922,9 @@ export default function App() {
       {/* ВИДЕО-БЛОК (VIDEO SECTION) */}
       <section className="pb-24 sm:pb-32 px-4 pt-[60px]">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10 pl-0 pt-[60px]">
-            <h2 className="font-semibold tracking-tight mb-3 serif-title italic max-w-full lg:w-[768px] mx-auto text-center" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.videoTitle}</h2>
-            <p className="text-sm sm:text-base max-w-3xl mx-auto font-light" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '27px', paddingTop: '25px', fontFamily: 'Georgia' }}>{t.videoSubtitle}</p>
+          <div className="text-center mb-10 pl-0">
+            <h2 className="font-semibold tracking-tight mb-3 serif-title italic max-w-full lg:w-[768px] mx-auto text-center text-3xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>{t.videoTitle}</h2>
+            <p className="text-sm sm:text-base max-w-3xl mx-auto font-light mt-4" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{t.videoSubtitle}</p>
           </div>
           
           <div className="video-glow-frame p-2 sm:p-3 rounded-3xl max-w-3xl mx-auto overflow-hidden" style={{ borderRadius: '24px' }}>
@@ -790,7 +946,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
-            <h2 className="font-bold tracking-tight mb-4 serif-title italic" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.howTitle}</h2>
+            <h2 className="font-bold tracking-tight mb-4 serif-title italic text-3xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>{t.howTitle}</h2>
             <p className="text-base sm:text-lg font-light" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{t.howSubtitle}</p>
           </div>
 
@@ -835,8 +991,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
-            <h2 className="font-semibold tracking-tight mb-4 serif-title italic text-center no-underline" style={{ color: 'var(--text-main)', textDecorationLine: 'none', textAlign: 'center', fontFamily: 'Playfair Display', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.benefitsTitle}</h2>
-            <p className="text-base sm:text-lg font-light" style={{ color: 'var(--text-muted)', paddingTop: '25px', fontFamily: 'Georgia' }}>{t.benefitsSubtitle}</p>
+            <h2 className="font-semibold tracking-tight mb-4 serif-title italic text-center no-underline text-3xl sm:text-4xl" style={{ color: 'var(--text-main)', textDecorationLine: 'none', textAlign: 'center', fontFamily: 'Playfair Display' }}>{t.benefitsTitle}</h2>
+            <p className="text-base sm:text-lg font-light mt-4" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{t.benefitsSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
@@ -886,8 +1042,8 @@ export default function App() {
         <div className="max-w-4xl mx-auto px-4">
           
           <div className="text-center mb-16">
-            <h2 className="font-semibold tracking-tight mb-4 serif-title italic" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.calcTitle}</h2>
-            <p className="text-base sm:text-lg font-light" style={{ color: 'var(--text-muted)', paddingTop: '25px', fontFamily: 'Georgia' }}>{t.calcSubtitle}</p>
+            <h2 className="font-semibold tracking-tight mb-4 serif-title italic text-3xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>{t.calcTitle}</h2>
+            <p className="text-base sm:text-lg font-light mt-4" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{t.calcSubtitle}</p>
           </div>
 
           <div className="glass-card p-6 sm:p-10 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center" style={{ fontFamily: 'Georgia' }}>
@@ -969,8 +1125,8 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4">
           
           <div className="text-center mb-16 sm:mb-24">
-            <h2 className="font-semibold tracking-tight mb-4 serif-title italic" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.reviewsTitle}</h2>
-            <p className="text-base sm:text-lg font-light" style={{ color: 'var(--text-muted)', paddingTop: '25px', fontFamily: 'Georgia' }}>{t.reviewsSubtitle}</p>
+            <h2 className="font-semibold tracking-tight mb-4 serif-title italic text-3xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>{t.reviewsTitle}</h2>
+            <p className="text-base sm:text-lg font-light mt-4" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>{t.reviewsSubtitle}</p>
           </div>
 
           {/* Главная обертка карусели */}
@@ -1087,8 +1243,8 @@ export default function App() {
               <span>{t.ctaBonusBadge}</span>
             </div>
 
-            <h2 className="font-semibold tracking-tight mb-6 serif-title italic" style={{ color: 'var(--text-main)', fontSize: '36px', height: '40px', lineHeight: '36px' }}>{t.ctaTitle}</h2>
-            <p className="text-base sm:text-xl max-w-xl mx-auto leading-relaxed font-light text-center" style={{ color: 'var(--text-muted)', fontSize: '18px', lineHeight: '28px', height: '90px', width: '737.4px', marginLeft: 'auto', marginRight: '0px', marginTop: '0px', marginBottom: '40px', paddingBottom: '0px', paddingTop: '0px', paddingLeft: '0px', paddingRight: '0px', borderRadius: '0px', borderWidth: '0px', maxWidth: '100%', fontFamily: 'Georgia' }}>
+            <h2 className="font-semibold tracking-tight mb-6 serif-title italic text-2xl sm:text-4xl" style={{ color: 'var(--text-main)' }}>{t.ctaTitle}</h2>
+            <p className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-light text-center mb-10" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
               {t.ctaSubtitle}
             </p>
 
