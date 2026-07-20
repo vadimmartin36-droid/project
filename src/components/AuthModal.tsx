@@ -86,9 +86,16 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: loginPassword
         })
       });
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(lang === 'ru' ? 'Неверный логин или пароль' : 'Incorrect username or password');
+      }
+
       if (!response.ok) {
-        throw new Error(data.error || (lang === 'ru' ? 'Ошибка входа' : 'Login failed'));
+        throw new Error(data.error || (lang === 'ru' ? 'Неверный логин или пароль' : 'Login failed'));
       }
       
       localStorage.setItem('honeygain_auth_token', data.user.token);
@@ -96,7 +103,11 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
       resetForm();
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      if (err.message && (err.message.includes("json") || err.message.includes("JSON") || err.message.includes("Unexpected end of JSON input"))) {
+        setError(lang === 'ru' ? 'Неверный логин или пароль' : 'Incorrect username or password');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
