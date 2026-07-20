@@ -500,26 +500,26 @@ export default function App() {
           <div className="animate-marquee whitespace-nowrap flex items-center py-0.5 text-xs sm:text-sm font-medium" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
             <span className="inline-flex items-center mx-4">
               {lang === 'ru' 
-                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
-                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 01.08.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for August 1, 2026. We apologize for any inconvenience.'}
             </span>
             <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
             <span className="inline-flex items-center mx-4">
               {lang === 'ru' 
-                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
-                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 01.08.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for August 1, 2026. We apologize for any inconvenience.'}
             </span>
             <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
             <span className="inline-flex items-center mx-4">
               {lang === 'ru' 
-                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
-                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 01.08.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for August 1, 2026. We apologize for any inconvenience.'}
             </span>
             <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
             <span className="inline-flex items-center mx-4">
               {lang === 'ru' 
-                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 20.07.26. Извините за неудобства.' 
-                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for July 20, 2026. We apologize for any inconvenience.'}
+                ? 'На сайте ведутся технические работы. Примерная дата окончания работ запланирована до 01.08.26. Извините за неудобства.' 
+                : 'The website is undergoing technical maintenance. The estimated completion date is scheduled for August 1, 2026. We apologize for any inconvenience.'}
             </span>
             <span className="inline-flex items-center mx-4 text-[#f6b026]">•</span>
           </div>
