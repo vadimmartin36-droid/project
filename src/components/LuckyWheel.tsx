@@ -349,6 +349,10 @@ export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate
 
   const currentPrizeObj = prizeIndex !== null ? PRIZES[prizeIndex] : null;
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <section id="wheel" className="py-24 sm:py-32 relative overflow-hidden border-t border-b scroll-mt-20" style={{ borderColor: "var(--card-border)" }}>
       {/* Dynamic Background Glowing Blobs */}

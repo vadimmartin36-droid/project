@@ -4,6 +4,20 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
+import {
+  initializeDatabase,
+  getUsers,
+  findUserByUsernameOrEmail,
+  findUserByToken,
+  findUserById,
+  createUser,
+  updateUserToken,
+  updateUserBalance,
+  getSpins,
+  findRecentSpin,
+  addSpin,
+  isD1Configured
+} from "./src/database";
 
 dotenv.config();
 
@@ -14,70 +28,8 @@ async function startServer() {
   app.set("trust proxy", true);
   app.use(express.json());
 
-  // Server-side Lucky Wheel storage & restrictions (one IP, one participation, caching/IP change protected)
-  interface SpinRecord {
-    ip: string;
-    fingerprint: string;
-    userId?: string;
-    timestamp: number;
-  }
-
-  interface UserRecord {
-    id: string;
-    username: string;
-    email: string;
-    passwordHash: string;
-    registeredAt: number;
-    balance: number;
-    token: string;
-  }
-
-  const SPINS_FILE = path.join(process.cwd(), "spins.json");
-  const USERS_FILE = path.join(process.cwd(), "users.json");
-  let spins: SpinRecord[] = [];
-  let users: UserRecord[] = [];
-
-  // Load existing spins and users on startup
-  try {
-    if (fs.existsSync(SPINS_FILE)) {
-      const fileData = fs.readFileSync(SPINS_FILE, "utf-8");
-      spins = JSON.parse(fileData);
-      // Filter out entries older than 24 hours on startup to keep memory light
-      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      spins = spins.filter(s => s.timestamp > oneDayAgo);
-    }
-  } catch (error) {
-    console.error("Error loading spins.json:", error);
-    spins = [];
-  }
-
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      const fileData = fs.readFileSync(USERS_FILE, "utf-8");
-      users = JSON.parse(fileData);
-    }
-  } catch (error) {
-    console.error("Error loading users.json:", error);
-    users = [];
-  }
-
-  function saveSpins() {
-    try {
-      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      spins = spins.filter(s => s.timestamp > oneDayAgo);
-      fs.writeFileSync(SPINS_FILE, JSON.stringify(spins, null, 2), "utf-8");
-    } catch (error) {
-      console.error("Error saving spins.json:", error);
-    }
-  }
-
-  function saveUsers() {
-    try {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
-    } catch (error) {
-      console.error("Error saving users.json:", error);
-    }
-  }
+  // Initialize DB (D1 or Local File fallback)
+  await initializeDatabase();
 
   // Simple hashing function for password protection
   function hashPassword(pwd: string): string {
@@ -161,7 +113,7 @@ async function startServer() {
   // --- AUTHENTICATION ENDPOINTS ---
 
   // Register Endpoint
-  app.post("/api/auth/register", (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const { username, email, password } = req.body;
       if (!username || !email || !password) {
@@ -184,15 +136,14 @@ async function startServer() {
         return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
       }
 
-      // Check if username already exists
-      const usernameExists = users.some(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
-      if (usernameExists) {
+      // Check if username or email already exists
+      const existingUser = await findUserByUsernameOrEmail(cleanUsername);
+      if (existingUser) {
         return res.status(400).json({ error: "Это имя пользователя уже занято" });
       }
 
-      // Check if email already exists
-      const emailExists = users.some(u => u.email === cleanEmail);
-      if (emailExists) {
+      const existingEmail = await findUserByUsernameOrEmail(cleanEmail);
+      if (existingEmail) {
         return res.status(400).json({ error: "Этот адрес электронной почты уже зарегистрирован" });
       }
 
@@ -200,7 +151,7 @@ async function startServer() {
       const userId = "usr_" + Math.random().toString(36).substring(2, 11);
       const token = "tok_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
-      const newUser: UserRecord = {
+      const newUser = {
         id: userId,
         username: cleanUsername,
         email: cleanEmail,
@@ -210,8 +161,7 @@ async function startServer() {
         token
       };
 
-      users.push(newUser);
-      saveUsers();
+      await createUser(newUser);
 
       // Return user data without sensitive passwordHash
       const { passwordHash: _, ...userResponse } = newUser;
@@ -223,7 +173,7 @@ async function startServer() {
   });
 
   // Login Endpoint
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { loginIdentifier, password } = req.body; // loginIdentifier can be username or email
       if (!loginIdentifier || !password) {
@@ -231,10 +181,7 @@ async function startServer() {
       }
 
       const cleanIdentifier = loginIdentifier.trim();
-      const user = users.find(u => 
-        u.username.toLowerCase() === cleanIdentifier.toLowerCase() || 
-        u.email === cleanIdentifier.toLowerCase()
-      );
+      const user = await findUserByUsernameOrEmail(cleanIdentifier);
 
       if (!user) {
         return res.status(400).json({ error: "Пользователь с таким именем или email не найден" });
@@ -246,8 +193,9 @@ async function startServer() {
       }
 
       // Generate a new token upon fresh login to ensure freshness
-      user.token = "tok_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      saveUsers();
+      const newToken = "tok_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      await updateUserToken(user.id, newToken);
+      user.token = newToken;
 
       const { passwordHash: _, ...userResponse } = user;
       return res.json({ success: true, user: userResponse });
@@ -258,14 +206,14 @@ async function startServer() {
   });
 
   // Session Me Check Endpoint
-  app.post("/api/auth/me", (req, res) => {
+  app.post("/api/auth/me", async (req, res) => {
     try {
       const { token } = req.body;
       if (!token) {
         return res.status(401).json({ error: "Не авторизован" });
       }
 
-      const user = users.find(u => u.token === token);
+      const user = await findUserByToken(token);
       if (!user) {
         return res.status(401).json({ error: "Невалидный сессионный токен" });
       }
@@ -279,33 +227,27 @@ async function startServer() {
   });
 
   // GET or POST Route to check wheel status (using POST to securely accept fingerprint and optional auth token)
-  app.post("/api/wheel-status", (req, res) => {
+  app.post("/api/wheel-status", async (req, res) => {
     try {
       const { fingerprint, token } = req.body;
       const ip = getClientIp(req);
-      const now = Date.now();
-      const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours
 
       // Resolve user if token is provided
       let userId: string | undefined = undefined;
       if (token) {
-        const matchedUser = users.find(u => u.token === token);
+        const matchedUser = await findUserByToken(token);
         if (matchedUser) {
           userId = matchedUser.id;
         }
       }
 
       // Find if this IP (only if public), Fingerprint, or User has already spun in the last 24 hours
-      const record = spins.find(s => {
-        const isIpMatch = isPublicIp(ip) && isPublicIp(s.ip) && s.ip === ip;
-        const isFpMatch = fingerprint && s.fingerprint && s.fingerprint === fingerprint;
-        const isUserMatch = userId && s.userId && s.userId === userId;
-        return (isIpMatch || isFpMatch || isUserMatch) && (now - s.timestamp < cooldownPeriod);
-      });
+      const record = await findRecentSpin(ip, fingerprint || "", userId);
 
       if (record) {
-        const remainingMs = cooldownPeriod - (now - record.timestamp);
-        return res.json({ cooldownSeconds: Math.ceil(remainingMs / 1000) });
+        const cooldownPeriod = 24 * 60 * 60 * 1000;
+        const remainingMs = cooldownPeriod - (Date.now() - record.timestamp);
+        return res.json({ cooldownSeconds: Math.max(0, Math.ceil(remainingMs / 1000)) });
       }
 
       return res.json({ cooldownSeconds: 0 });
@@ -316,7 +258,7 @@ async function startServer() {
   });
 
   // POST Route to execute spin
-  app.post("/api/wheel-spin", (req, res) => {
+  app.post("/api/wheel-spin", async (req, res) => {
     try {
       const { fingerprint, token } = req.body;
       if (!fingerprint) {
@@ -328,24 +270,19 @@ async function startServer() {
       const cooldownPeriod = 24 * 60 * 60 * 1000;
 
       // Resolve user if token is provided
-      let activeUser: UserRecord | undefined = undefined;
+      let activeUser = null;
       if (token) {
-        activeUser = users.find(u => u.token === token);
+        activeUser = await findUserByToken(token);
       }
 
       // Verify cooldown one more time across IP, Fingerprint, and User ID
-      const record = spins.find(s => {
-        const isIpMatch = isPublicIp(ip) && isPublicIp(s.ip) && s.ip === ip;
-        const isFpMatch = s.fingerprint === fingerprint;
-        const isUserMatch = activeUser && s.userId && s.userId === activeUser.id;
-        return (isIpMatch || isFpMatch || isUserMatch) && (now - s.timestamp < cooldownPeriod);
-      });
+      const record = await findRecentSpin(ip, fingerprint, activeUser ? activeUser.id : undefined);
 
       if (record) {
         const remainingMs = cooldownPeriod - (now - record.timestamp);
         return res.status(400).json({ 
           error: "Cooldown active", 
-          cooldownSeconds: Math.ceil(remainingMs / 1000) 
+          cooldownSeconds: Math.max(0, Math.ceil(remainingMs / 1000)) 
         });
       }
 
@@ -353,24 +290,14 @@ async function startServer() {
       const selectedIndex = getWeightedPrizeIndex();
 
       // Register spin on server
-      spins.push({
+      await addSpin({
         ip,
         fingerprint,
         userId: activeUser ? activeUser.id : undefined,
         timestamp: now
       });
-      saveSpins();
 
       // Dynamic immersive update: if logged in, we add actual prize to their profile balance!
-      // Prizes array mapping:
-      // index 0: +$1.00 Bonus
-      // index 1: +$0.50 Bonus
-      // index 2: +$1.50 Bonus
-      // index 3: Double Income Boost (1 hour)
-      // index 4: +$5.00 Jackpot Bonus
-      // index 5: +$0.20 Starter Bonus
-      // index 6: Contest Entry Ticket
-      // index 7: +10% Referral Booster
       if (activeUser) {
         let prizeAdded = 0;
         if (selectedIndex === 0) prizeAdded = 1.00;
@@ -380,8 +307,9 @@ async function startServer() {
         else if (selectedIndex === 5) prizeAdded = 0.20;
 
         if (prizeAdded > 0) {
-          activeUser.balance = parseFloat((activeUser.balance + prizeAdded).toFixed(2));
-          saveUsers();
+          const newBalance = parseFloat((activeUser.balance + prizeAdded).toFixed(2));
+          await updateUserBalance(activeUser.id, newBalance);
+          activeUser.balance = newBalance;
         }
       }
 

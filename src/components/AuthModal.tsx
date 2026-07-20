@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, Lock, LogIn, UserPlus, X, Coins, ShieldCheck, HelpCircle } from 'lucide-react';
+import { User, Mail, Lock, LogIn, UserPlus, X, Coins, ShieldCheck, HelpCircle, Gift, CheckCircle2 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -25,6 +25,8 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showDevPopup, setShowDevPopup] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState<any | null>(null);
 
   const resetForm = () => {
     setLoginIdentifier('');
@@ -38,12 +40,63 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowDevPopup(true);
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loginIdentifier,
+          password: loginPassword
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || (lang === 'ru' ? 'Ошибка входа' : 'Login failed'));
+      }
+      
+      localStorage.setItem('honeygain_auth_token', data.user.token);
+      onLoginSuccess(data.user);
+      resetForm();
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowDevPopup(true);
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: regUsername,
+          email: regEmail,
+          password: regPassword
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || (lang === 'ru' ? 'Ошибка регистрации' : 'Registration failed'));
+      }
+
+      localStorage.setItem('honeygain_auth_token', data.user.token);
+      setRegisteredUser(data.user);
+      setShowSuccessModal(true);
+      resetForm();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -381,6 +434,116 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
                 style={{ fontFamily: 'Georgia' }}
               >
                 {lang === 'ru' ? 'Хорошо, буду ждать' : 'Great, I\'ll stay tuned'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Registration Success Modal Popup */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            {/* Backdrop overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowSuccessModal(false);
+                if (registeredUser) onLoginSuccess(registeredUser);
+                onClose();
+              }}
+              className="absolute inset-0 bg-black/85 backdrop-blur-md cursor-pointer"
+            />
+            
+            {/* Modal content card */}
+            <motion.div
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="relative w-full max-w-md glass-card rounded-3xl border p-6 sm:p-8 overflow-hidden shadow-2xl z-10 text-center"
+              style={{ 
+                backgroundColor: 'var(--header-bg)', 
+                borderColor: 'var(--card-border)',
+                boxShadow: '0 25px 50px -12px rgba(246, 176, 38, 0.25)'
+              }}
+            >
+              {/* Animated decorative glow blobs inside modal */}
+              <div className="absolute -top-12 -left-12 w-36 h-36 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-12 -right-12 w-36 h-36 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+
+              {/* Close Button */}
+              <button 
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  if (registeredUser) onLoginSuccess(registeredUser);
+                  onClose();
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              {/* Icon / Illustration */}
+              <div className="mx-auto w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-3xl text-emerald-400 mb-6 shadow-inner animate-bounce">
+                <Gift className="w-10 h-10" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-2xl font-bold mb-2 tracking-tight text-white font-sans">
+                {lang === 'ru' ? 'Регистрация успешна!' : 'Registration Successful!'}
+              </h3>
+              
+              {/* Body Message */}
+              <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                {lang === 'ru' 
+                  ? 'Поздравляем! Ваш аккаунт успешно создан. В знак благодарности мы начислили приветственный бонус на ваш баланс.'
+                  : 'Congratulations! Your account has been successfully created. As a welcome gift, we have credited a starting bonus to your account balance.'}
+              </p>
+
+              {/* Reward Badge */}
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-6 flex flex-col items-center justify-center gap-1.5 shadow-md">
+                <span className="text-[10px] uppercase tracking-widest text-[#f6b026] font-bold" style={{ fontFamily: 'Georgia' }}>
+                  {lang === 'ru' ? 'Приветственный бонус' : 'Welcome Starter Bonus'}
+                </span>
+                <span className="text-3xl sm:text-4xl font-black text-honey font-mono flex items-center justify-center gap-1">
+                  <Coins className="w-8 h-8 text-[#f6b026]" />
+                  +$3.00
+                </span>
+                <span className="text-[11px]" style={{ color: 'var(--text-muted)', fontFamily: 'Georgia' }}>
+                  {lang === 'ru' ? 'Сразу доступны для работы и колеса фортуны!' : 'Instantly available for tasks and lucky wheel!'}
+                </span>
+              </div>
+
+              {/* Unlocked Features list */}
+              <div className="space-y-2 mb-6 text-left max-w-xs mx-auto">
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>{lang === 'ru' ? 'Баланс зачислен' : 'Bonus balance credited'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>{lang === 'ru' ? 'Колесо фортуны активировано' : 'Lucky wheel activated'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>{lang === 'ru' ? 'Личный кабинет готов к работе' : 'Affiliate workspace ready'}</span>
+                </div>
+              </div>
+
+              {/* Submit / Proceed Button */}
+              <button 
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  if (registeredUser) onLoginSuccess(registeredUser);
+                  onClose();
+                }}
+                className="w-full py-3.5 px-5 rounded-xl honey-gradient text-slate-950 font-bold text-sm tracking-wide uppercase shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+                style={{ fontFamily: 'Georgia' }}
+              >
+                <span>{lang === 'ru' ? 'Войти в личный кабинет' : 'Enter My Dashboard'}</span>
               </button>
             </motion.div>
           </div>
