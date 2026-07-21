@@ -59,7 +59,17 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail })
       });
-      const data = await response.json();
+      
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (jsonErr) {
+        throw new Error(lang === 'ru' 
+          ? `Неверный формат ответа от сервера (Статус: ${response.status})` 
+          : `Invalid server response format (Status: ${response.status})`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка восстановления пароля' : 'Password recovery failed'));
       }
@@ -87,11 +97,14 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
         })
       });
       
+      const text = await response.text();
       let data;
       try {
-        data = await response.json();
+        data = JSON.parse(text);
       } catch (jsonErr) {
-        throw new Error(lang === 'ru' ? 'Неверный логин или пароль' : 'Incorrect username or password');
+        throw new Error(lang === 'ru' 
+          ? `Неверный формат ответа от сервера (Статус: ${response.status})` 
+          : `Invalid server response format (Status: ${response.status})`);
       }
 
       if (!response.ok) {
@@ -103,11 +116,7 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
       resetForm();
       onClose();
     } catch (err: any) {
-      if (err.message && (err.message.includes("json") || err.message.includes("JSON") || err.message.includes("Unexpected end of JSON input"))) {
-        setError(lang === 'ru' ? 'Неверный логин или пароль' : 'Incorrect username or password');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -129,11 +138,14 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
         })
       });
       
+      const text = await response.text();
       let data;
       try {
-        data = await response.json();
+        data = JSON.parse(text);
       } catch (jsonErr) {
-        throw new Error(lang === 'ru' ? 'Ошибка регистрации. Неверный ответ сервера.' : 'Registration failed. Invalid server response.');
+        throw new Error(lang === 'ru' 
+          ? `Ошибка регистрации: Неверный формат ответа от сервера (Статус: ${response.status})` 
+          : `Registration error: Invalid server response format (Status: ${response.status})`);
       }
 
       if (!response.ok) {
@@ -145,11 +157,7 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
       setShowSuccessModal(true);
       resetForm();
     } catch (err: any) {
-      if (err.message && (err.message.includes("json") || err.message.includes("JSON") || err.message.includes("Unexpected end of JSON input"))) {
-        setError(lang === 'ru' ? 'Ошибка обработки ответа сервера' : 'Server response parsing error');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }
