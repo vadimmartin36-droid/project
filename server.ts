@@ -442,6 +442,60 @@ async function startServer() {
     }
   });
 
+  // API Route to update user balance (claimed daily jar or spins or withdrawals)
+  app.post("/api/user/update-balance", async (req, res) => {
+    try {
+      const { token, balance } = req.body;
+      if (!token || balance === undefined) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const user = await findUserByToken(token);
+      if (!user) {
+        return res.status(401).json({ error: "Unauthorized / Invalid token" });
+      }
+
+      const balanceNum = parseFloat(parseFloat(balance).toFixed(2));
+      await updateUserBalance(user.id, balanceNum);
+      user.balance = balanceNum;
+
+      const { passwordHash: _, ...userResponse } = user;
+      return res.json({ success: true, user: userResponse });
+    } catch (error) {
+      console.error("Error updating user balance:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  // API Route to update password
+  app.post("/api/user/change-password", async (req, res) => {
+    try {
+      const { token, oldPassword, newPassword } = req.body;
+      if (!token || !oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Пожалуйста, заполните все поля" });
+      }
+
+      const user = await findUserByToken(token);
+      if (!user) {
+        return res.status(401).json({ error: "Неавторизованный запрос" });
+      }
+
+      const oldHash = hashPassword(oldPassword);
+      if (user.passwordHash !== oldHash) {
+        return res.status(400).json({ error: "Неверный текущий пароль" });
+      }
+
+      const newHash = hashPassword(newPassword);
+      await updateUserPassword(user.id, newHash);
+      user.passwordHash = newHash;
+
+      return res.json({ success: true, message: "Пароль успешно изменен" });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      res.status(500).json({ error: "Ошибка сервера" });
+    }
+  });
+
   // API Route for chat
   app.post("/api/chat", async (req, res) => {
     try {
