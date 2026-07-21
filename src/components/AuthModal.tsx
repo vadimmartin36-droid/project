@@ -128,7 +128,14 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: regPassword
         })
       });
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(lang === 'ru' ? 'Ошибка регистрации. Неверный ответ сервера.' : 'Registration failed. Invalid server response.');
+      }
+
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка регистрации' : 'Registration failed'));
       }
@@ -138,7 +145,11 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
       setShowSuccessModal(true);
       resetForm();
     } catch (err: any) {
-      setError(err.message);
+      if (err.message && (err.message.includes("json") || err.message.includes("JSON") || err.message.includes("Unexpected end of JSON input"))) {
+        setError(lang === 'ru' ? 'Ошибка обработки ответа сервера' : 'Server response parsing error');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

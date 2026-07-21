@@ -229,6 +229,25 @@ async function startServer() {
       // Send the email via Resend API
       const apiKey = process.env.RESEND_API_KEY;
       let emailSentSuccessfully = false;
+      let resendErrorMsg = "";
+
+      let fromEmail = process.env.RESEND_FROM_EMAIL || "HoneyGain <onboarding@resend.dev>";
+
+      // Ensure there are no non-ASCII characters in the 'from' field to prevent Resend API 422 validation_error
+      if (/[^\x00-\x7F]/.test(fromEmail)) {
+        console.warn(`Non-ASCII characters detected in from email: "${fromEmail}". Sanitizing for Resend API...`);
+        const emailMatch = fromEmail.match(/<([^>]+)>/);
+        if (emailMatch && emailMatch[1]) {
+          const emailOnly = emailMatch[1].trim();
+          if (!/[^\x00-\x7F]/.test(emailOnly)) {
+            fromEmail = `HoneyGain <${emailOnly}>`;
+          } else {
+            fromEmail = "onboarding@resend.dev";
+          }
+        } else {
+          fromEmail = "onboarding@resend.dev";
+        }
+      }
 
       if (apiKey) {
         try {
@@ -239,7 +258,7 @@ async function startServer() {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              from: "HoneyGain <onboarding@resend.dev>",
+              from: fromEmail,
               to: [user.email || cleanEmail],
               subject: "Восстановление пароля HoneyGain",
               html: `
@@ -265,22 +284,38 @@ async function startServer() {
           if (!emailResponse.ok) {
             const errBody = await emailResponse.text();
             console.error("Resend API error response:", errBody);
+            try {
+              const errJson = JSON.parse(errBody);
+              let msg = errJson.message || errBody;
+              if (msg.includes("You can only send testing emails to your own email address")) {
+                msg = "Вы можете отправлять тестовые письма только на подтвержденный email владельца аккаунта Resend. Чтобы иметь возможность отправлять письма на другие адреса (включая этот), пожалуйста, подтвердите свой собственный домен на сайте https://resend.com/domains и настройте отправку с вашего домена.";
+              }
+              resendErrorMsg = msg;
+            } catch {
+              resendErrorMsg = errBody;
+            }
           } else {
             console.log(`Email successfully sent to ${user.email || cleanEmail} via Resend`);
             emailSentSuccessfully = true;
           }
-        } catch (emailErr) {
+        } catch (emailErr: any) {
           console.error("Failed to send email with Resend:", emailErr);
+          let msg = emailErr.message || String(emailErr);
+          if (msg.includes("You can only send testing emails to your own email address")) {
+            msg = "Вы можете отправлять тестовые письма только на подтвержденный email владельца аккаунта Resend. Чтобы иметь возможность отправлять письма на другие адреса (включая этот), пожалуйста, подтвердите свой собственный домен на сайте https://resend.com/domains и настройте отправку с вашего домена.";
+          }
+          resendErrorMsg = msg;
         }
       } else {
         console.warn("RESEND_API_KEY is not defined. Email was not sent.");
+        resendErrorMsg = "Переменная окружения RESEND_API_KEY не задана.";
       }
 
       return res.json({ 
         success: true, 
         message: emailSentSuccessfully
           ? "Новый временный пароль успешно отправлен на ваш e-mail! Пожалуйста, проверьте папку Входящие или Спам."
-          : "Временный пароль сброшен на '123456'. К сожалению, не удалось отправить письмо (проверьте настройки Resend)."
+          : `Временный пароль сброшен на '123456'. К сожалению, не удалось отправить письмо. Ошибка Resend: ${resendErrorMsg}`
       });
     } catch (err) {
       console.error("Error in forgot-password:", err);
