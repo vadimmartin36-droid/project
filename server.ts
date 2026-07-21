@@ -226,9 +226,61 @@ async function startServer() {
       const newHash = hashPassword(tempPass);
       await updateUserPassword(user.id, newHash);
 
+      // Send the email via Resend API
+      const apiKey = process.env.RESEND_API_KEY;
+      let emailSentSuccessfully = false;
+
+      if (apiKey) {
+        try {
+          const emailResponse = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              from: "HoneyGain <onboarding@resend.dev>",
+              to: [user.email || cleanEmail],
+              subject: "Восстановление пароля HoneyGain",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 12px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 20px;">
+                    <span style="font-size: 40px;">🐝</span>
+                    <h2 style="color: #2d3748; margin-top: 10px;">HoneyGain Support</h2>
+                  </div>
+                  <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">Здравствуйте, <strong>${user.username}</strong>!</p>
+                  <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">Вы запросили восстановление пароля для вашего аккаунта HoneyGain.</p>
+                  <div style="background-color: #f7fafc; border-left: 4px solid #f6b026; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">Ваш новый временный пароль для входа:</p>
+                    <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #2d3748; letter-spacing: 1px;">${tempPass}</p>
+                  </div>
+                  <p style="color: #4a5568; font-size: 15px; line-height: 1.5;">Пожалуйста, войдите, используя этот пароль, и обязательно измените его на свой собственный в настройках профиля в целях безопасности.</p>
+                  <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 30px 0;" />
+                  <p style="color: #a0aec0; font-size: 12px; text-align: center;">Это автоматическое письмо, пожалуйста, не отвечайте на него.</p>
+                </div>
+              `
+            })
+          });
+
+          if (!emailResponse.ok) {
+            const errBody = await emailResponse.text();
+            console.error("Resend API error response:", errBody);
+          } else {
+            console.log(`Email successfully sent to ${user.email || cleanEmail} via Resend`);
+            emailSentSuccessfully = true;
+          }
+        } catch (emailErr) {
+          console.error("Failed to send email with Resend:", emailErr);
+        }
+      } else {
+        console.warn("RESEND_API_KEY is not defined. Email was not sent.");
+      }
+
       return res.json({ 
         success: true, 
-        message: "Ссылка для восстановления отправлена на ваш e-mail! В демонстрационном режиме мы также сбросили ваш пароль на '123456' для быстрого входа." 
+        message: emailSentSuccessfully
+          ? "Новый временный пароль успешно отправлен на ваш e-mail! Пожалуйста, проверьте папку Входящие или Спам."
+          : "Временный пароль сброшен на '123456'. К сожалению, не удалось отправить письмо (проверьте настройки Resend)."
       });
     } catch (err) {
       console.error("Error in forgot-password:", err);
