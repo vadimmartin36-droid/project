@@ -592,7 +592,9 @@ async function startServer() {
     '/baza-znanij', 
     '/baza-znanij/', 
     '/about', 
-    '/about/'
+    '/about/',
+    '/cabinet',
+    '/cabinet/'
   ];
 
   app.get(spaPages, async (req, res, next) => {
