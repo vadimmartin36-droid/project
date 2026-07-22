@@ -150,7 +150,7 @@ export default {
       }
     }
 
-    // ------ ПОЛУЧЕНИЕ КОЛИЧЕСТВА ЛАЙКОВ ------
+        // ------ ПОЛУЧЕНИЕ КОЛИЧЕСТВА ЛАЙКОВ ------
     if (path.match(/^\/api\/likes\/[^\/]+\/\d+$/) && request.method === 'GET') {
       const parts = path.split('/');
       const targetType = parts[3];
@@ -158,6 +158,14 @@ export default {
       const result: any = await env.DB.prepare(
         'SELECT COUNT(*) as count FROM likes WHERE target_type = ? AND target_id = ?'
       ).bind(targetType, targetId).first();
+
+      return new Response(JSON.stringify({ count: result?.count || 0 }));
+    }
+
+    // ------ ЕСЛИ НЕ API - ОТДАЁМ СТАТИКУ ЧЕРЕЗ ASSETS ------
+    return env.ASSETS.fetch(request);
+  }
+};
 
 
 
