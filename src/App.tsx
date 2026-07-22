@@ -218,6 +218,34 @@ export default function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Admin-bypass состояние для отображения Входа/Регистрации
+  const [adminBypass, setAdminBypass] = useState(() => {
+    return localStorage.getItem('honeygain_admin_bypass') === 'true';
+  });
+  const [logoClicks, setLogoClicks] = useState(0);
+  const [adminNotification, setAdminNotification] = useState<string | null>(null);
+
+  // Проверка URL на наличие ?admin=true или ?admin=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('admin')) {
+      const val = params.get('admin');
+      if (val === 'true' || val === '1') {
+        localStorage.setItem('honeygain_admin_bypass', 'true');
+        setAdminBypass(true);
+        setAdminNotification(lang === 'ru' ? 'Режим администратора активирован!' : 'Admin mode activated!');
+        setTimeout(() => setAdminNotification(null), 4000);
+      } else if (val === 'false' || val === '0') {
+        localStorage.removeItem('honeygain_admin_bypass');
+        setAdminBypass(false);
+        setAdminNotification(lang === 'ru' ? 'Режим администратора отключен.' : 'Admin mode deactivated.');
+        setTimeout(() => setAdminNotification(null), 4000);
+      }
+    }
+  }, [lang]);
+
+  const isAuthMenuVisible = adminBypass || (user && user.email === 'vadimmartin38@gmail.com');
+
   useEffect(() => {
     const token = localStorage.getItem('honeygain_auth_token');
     if (token) {
@@ -226,9 +254,13 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Stale token');
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Stale token');
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return res.json();
+        }
+        throw new Error('Invalid response format');
       })
       .then(data => {
         if (data.success) {
@@ -303,6 +335,26 @@ export default function App() {
             onClick={() => {
               setCurrentPage('home');
               window.scrollTo(0, 0);
+              
+              // Быстрое переключение режима администратора по 5 кликам на логотип
+              setLogoClicks(prev => {
+                const next = prev + 1;
+                if (next >= 5) {
+                  const nextBypass = !adminBypass;
+                  if (nextBypass) {
+                    localStorage.setItem('honeygain_admin_bypass', 'true');
+                    setAdminBypass(true);
+                    setAdminNotification(lang === 'ru' ? 'Режим администратора включен. Вход и регистрация теперь видны!' : 'Admin mode enabled. Login & registration are now visible!');
+                  } else {
+                    localStorage.removeItem('honeygain_admin_bypass');
+                    setAdminBypass(false);
+                    setAdminNotification(lang === 'ru' ? 'Режим администратора отключен.' : 'Admin mode disabled.');
+                  }
+                  setTimeout(() => setAdminNotification(null), 4000);
+                  return 0;
+                }
+                return next;
+              });
             }} 
             className="flex items-center space-x-2.5 group text-left cursor-pointer" 
             style={{ fontFamily: 'Georgia' }}
@@ -446,14 +498,16 @@ export default function App() {
                 </AnimatePresence>
               </div>
             ) : (
-              <button 
-                onClick={() => setIsAuthOpen(true)}
-                className="hidden sm:flex h-9 px-3 rounded-full glass-card items-center space-x-1.5 text-xs font-bold cursor-pointer text-[var(--text-main)] hover:bg-white/5 transition-all"
-                style={{ fontFamily: 'Georgia' }}
-              >
-                <i className="fa-solid fa-user text-[#f6b026]"></i>
-                <span>{lang === 'ru' ? 'Вход' : 'Sign In'}</span>
-              </button>
+              isAuthMenuVisible && (
+                <button 
+                  onClick={() => setIsAuthOpen(true)}
+                  className="hidden sm:flex h-9 px-3 rounded-full glass-card items-center space-x-1.5 text-xs font-bold cursor-pointer text-[var(--text-main)] hover:bg-white/5 transition-all"
+                  style={{ fontFamily: 'Georgia' }}
+                >
+                  <i className="fa-solid fa-user text-[#f6b026]"></i>
+                  <span>{lang === 'ru' ? 'Вход' : 'Sign In'}</span>
+                </button>
+              )
             )}
 
             {/* Красивая кнопка Мобильного Меню (Hamburger) */}
@@ -628,17 +682,19 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAuthOpen(true);
-                    }}
-                    className="w-full py-3 px-4 rounded-xl honey-gradient text-slate-950 font-bold text-xs tracking-wide uppercase transition-all shadow-lg shadow-amber-500/10 text-center flex items-center justify-center space-x-2 cursor-pointer"
-                    style={{ fontFamily: 'Georgia' }}
-                  >
-                    <i className="fa-solid fa-user"></i>
-                    <span>{lang === 'ru' ? 'Войти в аккаунт' : 'Sign In'}</span>
-                  </button>
+                  isAuthMenuVisible && (
+                    <button 
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsAuthOpen(true);
+                      }}
+                      className="w-full py-3 px-4 rounded-xl honey-gradient text-slate-950 font-bold text-xs tracking-wide uppercase transition-all shadow-lg shadow-amber-500/10 text-center flex items-center justify-center space-x-2 cursor-pointer"
+                      style={{ fontFamily: 'Georgia' }}
+                    >
+                      <i className="fa-solid fa-user"></i>
+                      <span>{lang === 'ru' ? 'Войти в аккаунт' : 'Sign In'}</span>
+                    </button>
+                  )
                 )}
               </div>
             </motion.div>
@@ -1687,6 +1743,31 @@ export default function App() {
               >
                 {t.cookieConsentAccept}
               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Уведомление режима администратора */}
+      <AnimatePresence>
+        {adminNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.9 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3.5 rounded-2xl border shadow-2xl flex items-center gap-3 backdrop-blur-md"
+            style={{ 
+              backgroundColor: 'var(--card-bg)', 
+              borderColor: 'var(--card-border)',
+              boxShadow: '0 10px 30px -10px rgba(246, 176, 38, 0.3)',
+              fontFamily: 'Georgia'
+            }}
+          >
+            <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+              <i className="fa-solid fa-shield-halved"></i>
+            </div>
+            <div className="text-xs font-bold text-[var(--text-main)]">
+              {adminNotification}
             </div>
           </motion.div>
         )}

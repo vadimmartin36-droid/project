@@ -24,6 +24,7 @@ const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || "";
 const CF_D1_DATABASE_ID = process.env.CLOUDFLARE_D1_DATABASE_ID || "19c8cd09-b6bd-43d1-aeb9-735cafd80a61";
 
 export const isD1Configured = !!(CF_ACCOUNT_ID && CF_API_TOKEN && CF_D1_DATABASE_ID);
+let d1Active = isD1Configured;
 
 // Cloudflare D1 HTTP client using native Node fetch
 async function queryD1(sql: string, params: any[] = []): Promise<any> {
@@ -92,7 +93,10 @@ function saveLocalUsers() {
 }
 
 export async function initializeDatabase() {
-  if (isD1Configured) {
+  // Always load local files first so they are ready as a fallback if D1 fails later
+  initLocal();
+
+  if (d1Active) {
     console.log("☁️ D1 Database configured. Initializing schema...");
     try {
       // Create users table
@@ -119,23 +123,23 @@ export async function initializeDatabase() {
       `);
       console.log("✅ D1 Database schema verified successfully!");
     } catch (e) {
-      console.error("❌ Failed to initialize D1 schema. Check credentials.", e);
-      initLocal();
+      console.error("❌ Failed to initialize D1 schema. Disabling D1 and falling back to local files.", e);
+      d1Active = false;
     }
   } else {
-    console.log("📁 D1 Database NOT fully configured (CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN needed). Falling back to local files.");
-    initLocal();
+    console.log("📁 D1 Database NOT fully configured or disabled. Falling back to local files.");
   }
 }
 
 // User methods
 export async function getUsers(): Promise<UserRecord[]> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       const res = await queryD1("SELECT * FROM users;");
       return res.results || [];
     } catch (e) {
-      console.error("D1 getUsers failed, falling back to local storage", e);
+      console.error("D1 getUsers failed, falling back to local storage and disabling D1", e);
+      d1Active = false;
     }
   }
   return localUsers;
@@ -143,7 +147,7 @@ export async function getUsers(): Promise<UserRecord[]> {
 
 export async function findUserByUsernameOrEmail(identifier: string): Promise<UserRecord | null> {
   const cleanId = identifier.trim().toLowerCase();
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       const res = await queryD1(
         "SELECT * FROM users WHERE LOWER(username) = ? OR LOWER(email) = ? LIMIT 1;",
@@ -152,40 +156,43 @@ export async function findUserByUsernameOrEmail(identifier: string): Promise<Use
       const rows = res.results || [];
       return rows.length > 0 ? rows[0] : null;
     } catch (e) {
-      console.error("D1 findUserByUsernameOrEmail failed, falling back to local", e);
+      console.error("D1 findUserByUsernameOrEmail failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   return localUsers.find(u => u.username.toLowerCase() === cleanId || u.email === cleanId) || null;
 }
 
 export async function findUserByToken(token: string): Promise<UserRecord | null> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       const res = await queryD1("SELECT * FROM users WHERE token = ? LIMIT 1;", [token]);
       const rows = res.results || [];
       return rows.length > 0 ? rows[0] : null;
     } catch (e) {
-      console.error("D1 findUserByToken failed, falling back to local", e);
+      console.error("D1 findUserByToken failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   return localUsers.find(u => u.token === token) || null;
 }
 
 export async function findUserById(id: string): Promise<UserRecord | null> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       const res = await queryD1("SELECT * FROM users WHERE id = ? LIMIT 1;", [id]);
       const rows = res.results || [];
       return rows.length > 0 ? rows[0] : null;
     } catch (e) {
-      console.error("D1 findUserById failed, falling back to local", e);
+      console.error("D1 findUserById failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   return localUsers.find(u => u.id === id) || null;
 }
 
 export async function createUser(user: UserRecord): Promise<void> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       await queryD1(
         "INSERT INTO users (id, username, email, passwordHash, registeredAt, balance, token) VALUES (?, ?, ?, ?, ?, ?, ?);",
@@ -193,7 +200,8 @@ export async function createUser(user: UserRecord): Promise<void> {
       );
       return;
     } catch (e) {
-      console.error("D1 createUser failed, trying local backup", e);
+      console.error("D1 createUser failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   localUsers.push(user);
@@ -201,12 +209,13 @@ export async function createUser(user: UserRecord): Promise<void> {
 }
 
 export async function updateUserToken(userId: string, token: string): Promise<void> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       await queryD1("UPDATE users SET token = ? WHERE id = ?;", [token, userId]);
       return;
     } catch (e) {
-      console.error("D1 updateUserToken failed, updating local", e);
+      console.error("D1 updateUserToken failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   const u = localUsers.find(usr => usr.id === userId);
@@ -217,12 +226,13 @@ export async function updateUserToken(userId: string, token: string): Promise<vo
 }
 
 export async function updateUserBalance(userId: string, balance: number): Promise<void> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       await queryD1("UPDATE users SET balance = ? WHERE id = ?;", [balance, userId]);
       return;
     } catch (e) {
-      console.error("D1 updateUserBalance failed, updating local", e);
+      console.error("D1 updateUserBalance failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   const u = localUsers.find(usr => usr.id === userId);
@@ -233,12 +243,13 @@ export async function updateUserBalance(userId: string, balance: number): Promis
 }
 
 export async function updateUserPassword(userId: string, passwordHash: string): Promise<void> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       await queryD1("UPDATE users SET passwordHash = ? WHERE id = ?;", [passwordHash, userId]);
       return;
     } catch (e) {
-      console.error("D1 updateUserPassword failed, updating local", e);
+      console.error("D1 updateUserPassword failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   const u = localUsers.find(usr => usr.id === userId);
@@ -250,12 +261,13 @@ export async function updateUserPassword(userId: string, passwordHash: string): 
 
 // Spin methods
 export async function getSpins(): Promise<SpinRecord[]> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       const res = await queryD1("SELECT * FROM spins;");
       return res.results || [];
     } catch (e) {
-      console.error("D1 getSpins failed, falling back to local", e);
+      console.error("D1 getSpins failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   return localSpins;
@@ -263,7 +275,7 @@ export async function getSpins(): Promise<SpinRecord[]> {
 
 export async function findRecentSpin(ip: string, fingerprint: string, userId?: string, cooldownMs: number = 24 * 60 * 60 * 1000): Promise<SpinRecord | null> {
   const minTime = Date.now() - cooldownMs;
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       let query = "SELECT * FROM spins WHERE timestamp > ? AND (ip = ? OR fingerprint = ?";
       const params = [minTime, ip, fingerprint];
@@ -277,7 +289,8 @@ export async function findRecentSpin(ip: string, fingerprint: string, userId?: s
       const rows = res.results || [];
       return rows.length > 0 ? rows[0] : null;
     } catch (e) {
-      console.error("D1 findRecentSpin failed, trying local", e);
+      console.error("D1 findRecentSpin failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
 
@@ -290,7 +303,7 @@ export async function findRecentSpin(ip: string, fingerprint: string, userId?: s
 }
 
 export async function addSpin(spin: SpinRecord): Promise<void> {
-  if (isD1Configured) {
+  if (d1Active) {
     try {
       await queryD1(
         "INSERT INTO spins (ip, fingerprint, userId, timestamp) VALUES (?, ?, ?, ?);",
@@ -298,7 +311,8 @@ export async function addSpin(spin: SpinRecord): Promise<void> {
       );
       return;
     } catch (e) {
-      console.error("D1 addSpin failed, saving local", e);
+      console.error("D1 addSpin failed, falling back to local and disabling D1", e);
+      d1Active = false;
     }
   }
   localSpins.push(spin);

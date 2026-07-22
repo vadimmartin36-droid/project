@@ -299,93 +299,199 @@ export function AIConsultant({ lang }: AIConsultantProps) {
 
   return (
     <>
-      {/* Centered Chat Window Overlay */}
+      {/* Interactive Chat Window Overlay */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-            {/* Click outside to close */}
-            <div className="absolute inset-0 cursor-pointer" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-6 z-50 flex items-end justify-end p-0 sm:p-4 pointer-events-none">
+            {/* Click outside to close (Only active on mobile screens where it takes full screen overlay) */}
+            <div className="fixed inset-0 sm:hidden bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={() => setIsOpen(false)} />
             
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="w-full max-w-[420px] rounded-3xl p-6 sm:p-8 shadow-2xl border flex flex-col items-center text-center relative z-10 glass-card overflow-hidden"
+              className="w-full sm:w-[380px] h-full sm:h-[550px] sm:rounded-3xl border flex flex-col relative pointer-events-auto glass-card overflow-hidden shadow-2xl"
               style={{ 
                 backgroundColor: "var(--card-bg)", 
                 borderColor: "var(--card-border)",
-                boxShadow: "0 25px 50px -12px rgba(246, 176, 38, 0.2)"
+                boxShadow: "0 25px 50px -12px rgba(246, 176, 38, 0.25)"
               }}
             >
-              {/* Glowing decorative indicator */}
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500 to-transparent animate-pulse" />
+              {/* Glowing decorative top bar */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500 to-transparent animate-pulse z-20" />
               
-              {/* Close Button on top right */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer text-amber-500/70 hover:text-amber-500"
-              >
-                <i className="fa-solid fa-xmark text-lg"></i>
-              </button>
+              {/* HEADER CONTAINER */}
+              <div className="px-5 py-4 border-b flex items-center justify-between relative z-10" style={{ borderColor: "var(--card-border)", backgroundColor: "rgba(0,0,0,0.15)" }}>
+                <div className="flex items-center space-x-3 text-left">
+                  {/* Status Indicator Avatar */}
+                  <div className="relative w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                    <i className="fa-solid fa-robot text-lg"></i>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2" style={{ borderColor: "var(--card-bg)" }} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm" style={{ color: "var(--text-main)" }}>
+                      {t.headerTitle}
+                    </h3>
+                    <p className="text-[10px] text-emerald-400 font-medium">
+                      {t.headerSubtitle}
+                    </p>
+                  </div>
+                </div>
 
-              {/* Icon / Illustration */}
-              <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-6 relative mt-2">
-                <div className="absolute inset-0 rounded-2xl bg-amber-500/5 animate-ping opacity-50" />
-                <i className="fa-solid fa-screwdriver-wrench text-3xl animate-bounce" style={{ animationDuration: '3s' }}></i>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-slate-950 border border-amber-500/20 flex items-center justify-center">
-                  <i className="fa-solid fa-gear text-[10px] animate-spin"></i>
+                {/* Header Controls (Clear, Settings, Close) */}
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={handleClear}
+                    title={t.clearChat}
+                    className="w-8 h-8 rounded-xl hover:bg-white/5 flex items-center justify-center transition-all text-[var(--text-muted)] hover:text-red-400 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-trash-can text-sm"></i>
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    title="Gemini API Settings"
+                    className={`w-8 h-8 rounded-xl hover:bg-white/5 flex items-center justify-center transition-all cursor-pointer ${isSettingsOpen ? 'text-amber-500' : 'text-[var(--text-muted)] hover:text-amber-500'}`}
+                  >
+                    <i className="fa-solid fa-sliders text-sm"></i>
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="w-8 h-8 rounded-xl hover:bg-white/5 flex items-center justify-center transition-all text-amber-500/70 hover:text-amber-500 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
                 </div>
               </div>
 
-              {/* Title & Status */}
-              <h3 
-                className="text-2xl font-extrabold tracking-tight text-amber-500 mb-2"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
-                {lang === "ru" ? "Технические работы" : "Technical Maintenance"}
-              </h3>
-              
-              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-bold text-amber-500 mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>{lang === "ru" ? "Скоро всё заработает!" : "Everything will work soon!"}</span>
+              {/* SETTINGS PANELS (Conditional) */}
+              <AnimatePresence>
+                {isSettingsOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="px-5 py-4 border-b text-left text-xs space-y-3 bg-black/25 overflow-hidden z-10"
+                    style={{ borderColor: "var(--card-border)" }}
+                  >
+                    <p className="font-semibold text-honey">⚙️ Gemini API Key Settings</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                      {lang === "ru" 
+                        ? "Если у вас есть собственный ключ Gemini API, введите его здесь, чтобы разблокировать полноценный свободный диалог без ограничений шаблонов." 
+                        : "If you have a custom Gemini API Key, insert it here to unlock 100% free unconstrained conversations."}
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        placeholder="AIzaSy..."
+                        value={userApiKey}
+                        onChange={(e) => {
+                          setUserApiKey(e.target.value);
+                          localStorage.setItem("honeygain_gemini_api_key", e.target.value);
+                        }}
+                        className="flex-1 px-3 py-2 rounded-xl bg-black/20 border border-[var(--card-border)] focus:outline-none focus:border-amber-500 text-xs"
+                      />
+                      {userApiKey && (
+                        <button
+                          onClick={() => {
+                            setUserApiKey("");
+                            localStorage.removeItem("honeygain_gemini_api_key");
+                          }}
+                          className="px-2.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs transition-colors cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* MESSAGES FLOW WINDOW */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col bg-slate-950/20 relative">
+                {messages.map((m) => {
+                  const isUser = m.role === "user";
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} items-start space-x-2.5 max-w-full`}
+                    >
+                      {!isUser && (
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 flex-shrink-0 mt-0.5 shadow-sm">
+                          <i className="fa-solid fa-robot text-xs" />
+                        </div>
+                      )}
+                      <div className={`flex flex-col max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed text-left shadow-sm ${
+                            isUser
+                              ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-none'
+                              : 'bg-[var(--header-bg)] rounded-tl-none border border-[var(--card-border)] text-[var(--text-main)]'
+                          }`}
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {m.content}
+                        </div>
+                        <span className="text-[9px] mt-1 px-1 opacity-50" style={{ color: "var(--text-muted)" }}>
+                          {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {isLoading && (
+                  <div className="flex justify-start items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 flex-shrink-0 shadow-sm animate-pulse">
+                      <i className="fa-solid fa-robot text-xs" />
+                    </div>
+                    <div className="px-4 py-3 rounded-2xl bg-[var(--header-bg)] rounded-tl-none border border-[var(--card-border)] flex items-center space-x-1.5 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
 
-              {/* Description */}
-              <p 
-                className="text-xs sm:text-sm leading-relaxed mb-6" 
-                style={{ color: "var(--text-muted)" }}
-              >
-                {lang === "ru" 
-                  ? "Мы обновляем искусственный интеллект нашего онлайн-консультанта и проводим плановое техническое обслуживание. Чат временно недоступен, но совсем скоро вернется к работе с новыми возможностями!"
-                  : "We are currently updating our AI assistant and performing scheduled maintenance. The chat is temporarily unavailable, but will be back online very soon with brand new features!"}
-              </p>
+              {/* QUICK SUGGESTIONS BLOCK */}
+              {messages.length <= 2 && !isLoading && (
+                <div className="px-4 py-2 bg-slate-950/10 border-t border-[var(--card-border)] flex flex-wrap gap-1.5 justify-start max-h-[100px] overflow-y-auto">
+                  {suggestions[lang].map((s, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSend(s)}
+                      className="px-2.5 py-1.5 rounded-xl border bg-[var(--header-bg)] hover:bg-amber-500/5 hover:border-amber-500/50 hover:text-amber-500 text-[10px] text-left transition-all cursor-pointer truncate max-w-[180px]"
+                      style={{ borderColor: "var(--card-border)" }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              {/* Action Buttons */}
-              <div className="w-full space-y-3">
-                <a
-                  href="https://t.me/vadimmartin"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 px-4 rounded-xl honey-gradient text-slate-950 font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm shadow-lg shadow-amber-500/10 cursor-pointer"
-                >
-                  <i className="fa-brands fa-telegram text-base sm:text-lg"></i>
-                  <span>{lang === "ru" ? "Написать администратору" : "Contact Administrator"}</span>
-                </a>
-
+              {/* INPUT CONTAINER */}
+              <div className="p-3 border-t bg-[var(--header-bg)] flex items-center gap-2" style={{ borderColor: "var(--card-border)" }}>
+                <textarea
+                  rows={1}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend(input);
+                    }
+                  }}
+                  placeholder={t.placeholder}
+                  className="flex-1 min-h-[38px] max-h-[80px] resize-none px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-black/15 dark:bg-black/25 border border-[var(--card-border)] focus:outline-none focus:border-amber-500 text-[var(--text-main)] placeholder-[var(--text-muted)] transition-colors leading-relaxed"
+                />
                 <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full py-3 px-4 rounded-xl border font-semibold text-xs sm:text-sm hover:bg-white/5 transition-all cursor-pointer"
-                  style={{ borderColor: "var(--card-border)", color: "var(--text-main)" }}
+                  onClick={() => handleSend(input)}
+                  disabled={!input.trim() || isLoading}
+                  className="w-10 h-10 rounded-xl honey-gradient text-slate-950 flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer flex-shrink-0"
                 >
-                  {lang === "ru" ? "Закрыть" : "Close"}
+                  <i className="fa-solid fa-paper-plane text-sm" />
                 </button>
-              </div>
-
-              {/* Footer hint */}
-              <div className="mt-5 text-[10px]" style={{ color: "var(--text-muted)" }}>
-                <span>{lang === "ru" ? "Администрация Telegram:" : "Telegram Administration:"}</span>{" "}
-                <span className="text-amber-500 font-semibold">@vadimmartin</span>
               </div>
             </motion.div>
           </div>

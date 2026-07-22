@@ -224,9 +224,12 @@ export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate
           body: JSON.stringify({ fingerprint: fp, token: user?.token })
         });
         if (response.ok) {
-          const data = await response.json();
-          if (active && data.cooldownSeconds !== undefined) {
-            setCooldownSeconds(data.cooldownSeconds);
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await response.json();
+            if (active && data.cooldownSeconds !== undefined) {
+              setCooldownSeconds(data.cooldownSeconds);
+            }
           }
         }
       } catch (err) {
@@ -281,18 +284,25 @@ export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate
         body: JSON.stringify({ fingerprint, token: user?.token })
       });
 
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP Error ${response.status}`);
+      }
+
       if (!response.ok) {
-        const data = await response.json();
-        if (data.cooldownSeconds) {
+        if (data && data.cooldownSeconds) {
           setCooldownSeconds(data.cooldownSeconds);
           localStorage.setItem("honeygain_last_spin", (Date.now() - (24 * 60 * 60 * 1000 - data.cooldownSeconds * 1000)).toString());
         }
         setIsSpinning(false);
-        setErrorMessage(data.error || "Ошибка вращения");
+        setErrorMessage(data?.error || "Ошибка вращения");
         return;
       }
 
-      const data = await response.json();
       const selectedIndex = data.prizeIndex;
 
       setPrizeIndex(selectedIndex);
@@ -348,10 +358,6 @@ export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate
   };
 
   const currentPrizeObj = prizeIndex !== null ? PRIZES[prizeIndex] : null;
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <section id="wheel" className="py-24 sm:py-32 relative overflow-hidden border-t border-b scroll-mt-20" style={{ borderColor: "var(--card-border)" }}>
@@ -625,13 +631,15 @@ export function LuckyWheel({ lang, theme, referralLink, t, user, onBalanceUpdate
                         ? "Вы крутите рулетку в гостевом режиме. Зарегистрируйте аккаунт партнера, чтобы сохранить выигрыш и получить приветственные $3.00!" 
                         : "You are spinning in guest mode. Create an account to save your winnings and instantly activate your $3.00 gift!"}
                     </div>
-                    <button
-                      onClick={onOpenAuth}
-                      className="w-full py-2 px-4 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 transition-colors cursor-pointer text-center"
-                      style={{ fontFamily: "Georgia" }}
-                    >
-                      {lang === "ru" ? "Вход / Регистрация 🍯" : "Login / Register 🍯"}
-                    </button>
+                    {(localStorage.getItem('honeygain_admin_bypass') === 'true' || user?.email === 'vadimmartin38@gmail.com') && (
+                      <button
+                        onClick={onOpenAuth}
+                        className="w-full py-2 px-4 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 transition-colors cursor-pointer text-center"
+                        style={{ fontFamily: "Georgia" }}
+                      >
+                        {lang === "ru" ? "Вход / Регистрация 🍯" : "Login / Register 🍯"}
+                      </button>
+                    )}
                   </div>
                 )}
 

@@ -59,7 +59,16 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail })
       });
-      const data = await response.json();
+      
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP Error ${response.status}`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка восстановления пароля' : 'Password recovery failed'));
       }
@@ -86,7 +95,16 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: loginPassword
         })
       });
-      const data = await response.json();
+      
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP Error ${response.status}`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка входа' : 'Login failed'));
       }
@@ -117,7 +135,16 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: regPassword
         })
       });
-      const data = await response.json();
+      
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP Error ${response.status}`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка регистрации' : 'Registration failed'));
       }
