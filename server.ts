@@ -24,7 +24,7 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT_TEST ? parseInt(process.env.PORT_TEST, 10) : 3000;
 
   app.set("trust proxy", true);
   app.use(express.json());
