@@ -5,3 +5,13 @@
     "directory": "./dist"
   }
 }
+{
+  // ... другие настройки, которые уже есть ...
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "honeygain",
+      "database_id": "a823a290-f580-4225-bb37-6a856651189b"
+    }
+  ]
+}
