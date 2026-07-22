@@ -1,10 +1,16 @@
-import { hash, compare } from 'bcryptjs';
-import { randomBytes } from 'crypto';
-
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // ------ ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ХЕШИРОВАНИЯ ------
+    async function hashPassword(password: string): Promise<string> {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + 'honeygain-salt'); // соль
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 
     // ------ РЕГИСТРАЦИЯ ------
     if (path === '/api/auth/register' && request.method === 'POST') {
@@ -14,15 +20,14 @@ export default {
           return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 });
         }
 
-        const hashed = await hash(password, 10);
+        const passwordHash = await hashPassword(password);
         await env.DB.prepare(
           'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)'
-        ).bind(username, email, hashed).run();
+        ).bind(username, email, passwordHash).run();
 
         return new Response(JSON.stringify({ message: 'User created' }), { status: 201 });
       } catch (e: any) {
-        // Если ошибка из-за дубликата
-        if (e.message.includes('UNIQUE constraint failed')) {
+        if (e.message?.includes('UNIQUE constraint failed')) {
           return new Response(JSON.stringify({ error: 'User already exists' }), { status: 400 });
         }
         return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
@@ -41,16 +46,14 @@ export default {
           return new Response(JSON.stringify({ error: 'Invalid credentials' }), { status: 401 });
         }
 
-        const valid = await compare(password, user.password_hash);
-        if (!valid) {
+        const passwordHash = await hashPassword(password);
+        if (passwordHash !== user.password_hash) {
           return new Response(JSON.stringify({ error: 'Invalid credentials' }), { status: 401 });
         }
 
-        // Генерируем токен сессии
-        const token = randomBytes(32).toString('hex');
-        const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 дней
+        const token = crypto.randomUUID();
+        const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-        // Сохраняем сессию в таблицу
         await env.DB.prepare(
           'INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)'
         ).bind(token, user.id, expiresAt).run();
@@ -130,19 +133,16 @@ export default {
         return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 });
       }
 
-      // Проверяем, есть ли лайк
       const existing: any = await env.DB.prepare(
         'SELECT id FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?'
       ).bind(session.user_id, targetType, targetId).first();
 
       if (existing) {
-        // Удаляем лайк
         await env.DB.prepare(
           'DELETE FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?'
         ).bind(session.user_id, targetType, targetId).run();
         return new Response(JSON.stringify({ message: 'Unliked' }));
       } else {
-        // Добавляем лайк
         await env.DB.prepare(
           'INSERT INTO likes (user_id, target_type, target_id) VALUES (?, ?, ?)'
         ).bind(session.user_id, targetType, targetId).run();
@@ -162,7 +162,7 @@ export default {
       return new Response(JSON.stringify({ count: result?.count || 0 }));
     }
 
-    // ------ ЕСЛИ НЕ API - ОТДАЁМ СТАТИКУ (через assets) ------
+    // ------ СТАТИКА (если не API) ------
     // Возвращаем 404, чтобы Cloudflare попробовал отдать статику через assets
     return new Response('Not found', { status: 404 });
   }
