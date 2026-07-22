@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Функция хеширования пароля (SHA-256)
+    // Хеширование пароля (SHA-256)
     async function hashPassword(password: string): Promise<string> {
       const encoder = new TextEncoder();
       const data = encoder.encode(password + 'honeygain-salt');
@@ -146,7 +146,7 @@ export default {
       return new Response(JSON.stringify({ count: result?.count || 0 }));
     }
 
-    // ----- ВСЁ, ЧТО НЕ API, ОТДАЁМ ЧЕРЕЗ ASSETS -----
+    // ----- НЕ API — ОТДАЁМ СТАТИКУ -----
     return env.ASSETS.fetch(request);
   }
 };
