@@ -8,16 +8,14 @@ import { LuckyWheel } from './components/LuckyWheel';
 import { AuthModal } from './components/AuthModal';
 import { GuidePage } from './components/GuidePage';
 import { AboutPage } from './components/AboutPage';
-import { PersonalCabinet } from './components/PersonalCabinet';
 
 export default function App() {
-  // Текущая активная страница (home, guide, about или cabinet)
-  const [currentPage, setCurrentPage] = useState<'home' | 'guide' | 'about' | 'cabinet'>(() => {
+  // Текущая активная страница (home, guide или about)
+  const [currentPage, setCurrentPage] = useState<'home' | 'guide' | 'about'>(() => {
     const path = window.location.pathname;
     const hash = window.location.hash;
     if (path.includes('/baza-znanij') || hash.includes('/baza-znanij')) return 'guide';
     if (path.includes('/o-proekte') || path.includes('/about') || hash.includes('/o-proekte') || hash.includes('/about')) return 'about';
-    if (path.includes('/cabinet') || hash.includes('/cabinet')) return 'cabinet';
     return 'home';
   });
 
@@ -30,8 +28,6 @@ export default function App() {
         setCurrentPage('guide');
       } else if (path.includes('/o-proekte') || path.includes('/about') || hash.includes('/o-proekte') || hash.includes('/about')) {
         setCurrentPage('about');
-      } else if (path.includes('/cabinet') || hash.includes('/cabinet')) {
-        setCurrentPage('cabinet');
       } else {
         setCurrentPage('home');
       }
@@ -50,7 +46,6 @@ export default function App() {
     const path = window.location.pathname;
     const isCurrentlyGuide = path.includes('/baza-znanij');
     const isCurrentlyAbout = path.includes('/o-proekte') || path.includes('/about');
-    const isCurrentlyCabinet = path.includes('/cabinet');
 
     if (currentPage === 'guide') {
       if (!isCurrentlyGuide) {
@@ -60,12 +55,8 @@ export default function App() {
       if (!isCurrentlyAbout) {
         history.pushState({ page: 'about' }, '', '/o-proekte' + window.location.search);
       }
-    } else if (currentPage === 'cabinet') {
-      if (!isCurrentlyCabinet) {
-        history.pushState({ page: 'cabinet' }, '', '/cabinet' + window.location.search);
-      }
     } else {
-      if (isCurrentlyGuide || isCurrentlyAbout || isCurrentlyCabinet) {
+      if (isCurrentlyGuide || isCurrentlyAbout) {
         history.pushState({ page: 'home' }, '', '/' + window.location.search);
       }
     }
@@ -250,17 +241,6 @@ export default function App() {
     }
   }, []);
 
-  // Если не авторизован, но пытается открыть кабинет, перенаправляем на главную и открываем авторизацию
-  useEffect(() => {
-    if (currentPage === 'cabinet' && !user) {
-      const token = localStorage.getItem('honeygain_auth_token');
-      if (!token) {
-        setCurrentPage('home');
-        setIsAuthOpen(true);
-      }
-    }
-  }, [currentPage, user]);
-
   // Автоматическое перелистывание карусели каждые 5 секунд
   useEffect(() => {
     if (isHovered) return;
@@ -369,18 +349,6 @@ export default function App() {
             >
               {lang === 'ru' ? 'О проекте' : 'About'}
             </button>
-            {user && (
-              <button 
-                onClick={() => {
-                  setCurrentPage('cabinet');
-                  window.scrollTo(0, 0);
-                }}
-                className={`hover:text-[var(--text-main)] transition-colors cursor-pointer text-xs font-semibold uppercase tracking-widest ${currentPage === 'cabinet' ? 'text-honey font-bold' : ''}`}
-                style={{ fontFamily: 'Georgia' }}
-              >
-                {lang === 'ru' ? 'Личный кабинет' : 'Cabinet'}
-              </button>
-            )}
           </div>
 
           {/* Кнопки управления (Тема, Язык, Руководство, Авторизация, CTA) */}
@@ -443,18 +411,6 @@ export default function App() {
                         </div>
 
                         <div className="space-y-2 mb-3 text-xs">
-                          <button
-                            onClick={() => {
-                              setCurrentPage('cabinet');
-                              setIsUserMenuOpen(false);
-                            }}
-                            className="w-full py-2 px-3 rounded-xl bg-[#f6b026]/10 hover:bg-[#f6b026]/20 text-[#f6b026] text-xs font-bold transition-all text-center flex items-center justify-center gap-2 cursor-pointer mb-2 border border-[#f6b026]/20"
-                            style={{ fontFamily: 'Georgia' }}
-                          >
-                            <i className="fa-solid fa-user-gear text-xs"></i>
-                            <span>{lang === 'ru' ? 'Личный кабинет' : 'Personal Cabinet'}</span>
-                          </button>
-
                           <div className="flex justify-between items-center text-[var(--text-muted)]">
                             <span style={{ fontFamily: 'Georgia' }}>{lang === 'ru' ? 'Ваш баланс:' : 'Your balance:'}</span>
                             <span className="font-bold text-honey font-mono">${user.balance.toFixed(2)}</span>
@@ -591,21 +547,6 @@ export default function App() {
                   <i className="fa-solid fa-circle-info w-5 text-center text-[#f6b026]"></i>
                   <span>{lang === 'ru' ? 'О проекте' : 'About'}</span>
                 </button>
-
-                {user && (
-                  <button 
-                    onClick={() => {
-                      setCurrentPage('cabinet');
-                      setIsMobileMenuOpen(false);
-                      window.scrollTo(0, 0);
-                    }}
-                    className={`w-full py-3 px-4 rounded-xl flex items-center space-x-3 text-sm font-semibold tracking-wide transition-all cursor-pointer text-left border ${currentPage === 'cabinet' ? 'bg-[#f6b026]/10 text-[#f6b026] border-[#f6b026]/30' : 'text-[var(--text-muted)] hover:bg-white/5 border-transparent'}`}
-                    style={{ fontFamily: 'Georgia' }}
-                  >
-                    <i className="fa-solid fa-user-gear w-5 text-center text-[#f6b026]"></i>
-                    <span>{lang === 'ru' ? 'Личный кабинет' : 'Cabinet'}</span>
-                  </button>
-                )}
 
                 <div className="border-t my-4" style={{ borderColor: 'var(--card-border)' }} />
 
@@ -1336,7 +1277,7 @@ export default function App() {
           }}
           onBack={() => setCurrentPage('home')}
         />
-      ) : currentPage === 'about' ? (
+      ) : (
         <AboutPage
           lang={lang}
           theme={theme}
@@ -1344,23 +1285,7 @@ export default function App() {
           onBack={() => setCurrentPage('home')}
           onGuideClick={() => setCurrentPage('guide')}
         />
-      ) : currentPage === 'cabinet' && user ? (
-        <PersonalCabinet
-          user={user}
-          lang={lang}
-          theme={theme}
-          referralLink={referralLink}
-          onSignOut={() => {
-            localStorage.removeItem('honeygain_auth_token');
-            setUser(null);
-            setCurrentPage('home');
-          }}
-          onBalanceUpdate={(newBalance) => {
-            setUser((prev: any) => prev ? { ...prev, balance: newBalance } : prev);
-          }}
-          onBack={() => setCurrentPage('home')}
-        />
-      ) : null}
+      )}
 
       {/* ПОДВАЛ (FOOTER) */}
       <motion.footer 
@@ -1778,10 +1703,7 @@ export default function App() {
         isOpen={isAuthOpen} 
         onClose={() => setIsAuthOpen(false)} 
         lang={lang} 
-        onLoginSuccess={(userData) => {
-          setUser(userData);
-          setCurrentPage('cabinet');
-        }} 
+        onLoginSuccess={(userData) => setUser(userData)} 
       />
 
     </div>

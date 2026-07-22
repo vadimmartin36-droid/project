@@ -59,17 +59,7 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail })
       });
-      
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        throw new Error(lang === 'ru' 
-          ? `Неверный формат ответа от сервера (Статус: ${response.status})` 
-          : `Invalid server response format (Status: ${response.status})`);
-      }
-
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка восстановления пароля' : 'Password recovery failed'));
       }
@@ -96,19 +86,9 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: loginPassword
         })
       });
-      
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        throw new Error(lang === 'ru' 
-          ? `Неверный формат ответа от сервера (Статус: ${response.status})` 
-          : `Invalid server response format (Status: ${response.status})`);
-      }
-
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || (lang === 'ru' ? 'Неверный логин или пароль' : 'Login failed'));
+        throw new Error(data.error || (lang === 'ru' ? 'Ошибка входа' : 'Login failed'));
       }
       
       localStorage.setItem('honeygain_auth_token', data.user.token);
@@ -137,17 +117,7 @@ export function AuthModal({ isOpen, onClose, lang, onLoginSuccess }: AuthModalPr
           password: regPassword
         })
       });
-      
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        throw new Error(lang === 'ru' 
-          ? `Ошибка регистрации: Неверный формат ответа от сервера (Статус: ${response.status})` 
-          : `Registration error: Invalid server response format (Status: ${response.status})`);
-      }
-
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || (lang === 'ru' ? 'Ошибка регистрации' : 'Registration failed'));
       }
