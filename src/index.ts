@@ -159,11 +159,20 @@ export default {
         'SELECT COUNT(*) as count FROM likes WHERE target_type = ? AND target_id = ?'
       ).bind(targetType, targetId).first();
 
+
+
+      // ------ ОТДАЁМ СТАТИКУ (для корневого пути) ------
+if (path === '/' || path === '') {
+  // Пытаемся отдать index.html из assets
+  const asset = await env.ASSETS.fetch(request);
+  if (asset.status === 200) {
+    return asset;
+  }
+}
+
       return new Response(JSON.stringify({ count: result?.count || 0 }));
     }
 
-    // ------ СТАТИКА (если не API) ------
-    // Возвращаем 404, чтобы Cloudflare попробовал отдать статику через assets
-    return new Response('Not found', { status: 404 });
-  }
+    // ------ ЕСЛИ НЕ API - ОТДАЁМ СТАТИКУ ЧЕРЕЗ ASSETS ------
+return env.ASSETS.fetch(request);
 };
